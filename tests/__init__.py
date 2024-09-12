@@ -1,16 +1,21 @@
+import ast
 import asyncio
 import io
-import json
 import os
 import sys
-import types
 import unittest
-from typing import Any, Callable, Dict, List
-from testbook import testbook
+from typing import Any, Callable, List
 
 from gradescope_utils.autograder_utils.files import SUBMISSION_BASE
+from testbook import testbook
+from testbook.client import TestbookNotebookClient
 
-# asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+from default_import import import_checker_stmt
+
+if sys.platform.startswith("win"):
+    import asyncio
+
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
 class SuppressClass(io.StringIO):
@@ -28,29 +33,77 @@ class TestJupyterNotebook(unittest.TestCase):
     jupyter_notebook_file_path: str  # path to jupyter notebook
     data_file_path: str  # path to dataset
     notebook: testbook  # notebook class, use context manager to retrieve client
-    is_compilable: bool  # default to True
+    is_compilable: bool  # is notebook compilable
+    is_imports_allowed: bool  # is imports in notebook are all allowed
     err: Exception  # exception happened when try to run cell(s)
     allowed_imports: List[str]
+    client: TestbookNotebookClient
 
-    def setUp(
-        self,
+    @classmethod
+    def setUpClass(
+        cls,
         jupyter_notebook_file_path: str,
         data_file_path: str,
         allowed_imports: List[str] = None,
     ):
-        self.original_stdout = sys.stdout
-        self.suppress_text = io.StringIO()
-        self.allowed_imports = allowed_imports
-        self.jupyter_notebook_file_path = os.path.join(
+        cls.original_stdout = sys.stdout
+        cls.suppress_text = io.StringIO()
+        cls.allowed_imports = allowed_imports
+        cls.jupyter_notebook_file_path = os.path.join(
             SUBMISSION_BASE, jupyter_notebook_file_path
         )
-        self.data_file_path = os.path.join(
+        cls.data_file_path = os.path.join(
             SUBMISSION_BASE, data_file_path
         )  # TODO: load dataset
-        self.notebook = testbook(self.jupyter_notebook_file_path, execute=False)
-        self.is_compilable = True
-        self.err = None
-        self.err_has_been_reported = False
+        cls.notebook = testbook(cls.jupyter_notebook_file_path, execute=False)
+        cls.is_compilable = None
+        cls.imported_disallowed_pkgs = None
+        cls.err = None
+        cls.err_has_been_reported = False
+
+        cls.setUp_kernel(cls)
+        cls.compilablity()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.exit_kernel(self=cls)
+
+    @classmethod
+    def compilablity(cls) -> None:
+        # no need to check again
+        if cls.is_compilable is not None:
+            return
+
+        # self.suppress_print(cls, True)
+        try:
+            # with self.notebook as notebook_kernel:
+            # print(json.dumps(notebook_kernel.cells, indent=4))
+            cls.client.execute()
+            cls.suppress_print(cls, False)
+            cls.is_compilable = True
+            cls.err = None
+        except Exception as e:
+            # close the notebook kernel as exception occure
+            cls.exit_kernel(cls)
+            cls.suppress_print(cls, False)
+            cls.is_compilable = False
+            cls.err = e
+            cls.err_has_been_reported = False
+
+    def setUp_kernel(self) -> TestbookNotebookClient:
+        with self.notebook.client.setup_kernel(cleanup_kc=False):
+            self.notebook._prepare()
+            self.client = self.notebook.client
+            return self.client
+
+    def exit_kernel(self) -> None:
+        if (
+            hasattr(self, "client")
+            and hasattr(self.client, "km")
+            and self.client.km is not None
+            and asyncio.run(self.client.km.is_alive())
+        ):
+            self.client._cleanup_kernel()
 
     def suppress_print(self, suppress_print: bool) -> None:
         if suppress_print:
@@ -68,52 +121,49 @@ class TestJupyterNotebook(unittest.TestCase):
             self.suppress_print(False)
         return result
 
-    def compilablity(self) -> None:
-        self.suppress_print(True)
-        try:
-            with self.notebook as notebook_kernel:
-                print(json.dumps(notebook_kernel.cells, indent=4))
-                notebook_kernel.execute()
-                self.suppress_print(False)
-        except Exception as e:
-            self.suppress_print(False)
-            self.is_compilable = False
-            self.err = e
-            self.err_has_been_reported = False
+    def import_checker(self):
+        """Check imported packages"""
+        if not self.is_compilable:
+            return
 
-    def assert_compilable(self) -> None:
+        self.imported_disallowed_pkgs = None
+        if self.allowed_imports is None:
+            return
 
+        # direct inject code into notebook for checking the modules, a workaround
+        # for directly accessing globals().keys(), as notebook.ref() need to
+        # inject code into notebook which modify the globals() dynamically.
+        node = self.client.inject(
+            code=import_checker_stmt(self.allowed_imports), pop=True
+        )
+        self.imported_disallowed_pkgs = ast.literal_eval(
+            node.execute_result[0]["text/plain"]
+        )
+        # print(result)
+
+    def checker(self) -> None:
         # only report detailed error once.
-        msg = "See error message above."
-        if not self.err_has_been_reported:
-            msg = f"The notebook is not compilable! Detail: \n{self.err}"
-            self.err_has_been_reported = True
+        if self.err_has_been_reported:
+            return
 
+        msg = "See error message above."
         self.assertTrue(
-            self.is_compilable,
+            False,
             msg=msg,
         )
 
-    def import_checker(self):
-        """Check imported packages"""
-        self.assert_compilable()
+        self.err_has_been_reported = True
+        if not self.is_compilable:
+            self.exit_kernel()
+            msg = f"The notebook is not compilable! Detail: \n{self.err}"
+            self.assertTrue(
+                self.is_compilable,
+                msg=msg,
+            )
 
-        if self.allowed_imports is None:
-            return True
-
-        for name, val in list(globals().get("RSA").__dict__.items()):
-            if name.startswith("__"):
-                continue
-            if (
-                isinstance(val, types.BuiltinMethodType)
-                or isinstance(val, types.BuiltinFunctionType)
-                or isinstance(val, types.FunctionType)
-            ):
-                continue
-            if "typing." in str(val):
-                continue
-            return self.assertIn(
-                name,
+        if len(self.imported_disallowed_pkgs) > 0:
+            self.assertIn(
+                self.imported_disallowed_pkgs,
                 self.allowed_imports,
-                f"Import not allowed: <{name}>",
+                f"Import(s) not allowed: {', '.join(f'<{name}>' for name in self.imported_disallowed_pkgs)}.",
             )
