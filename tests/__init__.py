@@ -59,7 +59,7 @@ class TestJupyterNotebook(unittest.TestCase):
         cls.is_compilable = None
         cls.imported_disallowed_pkgs = None
         cls.err = None
-        cls.err_has_been_reported = False
+        cls.err_has_been_reported = None
 
         cls.setUp_kernel(cls)
         cls.compilablity()
@@ -142,15 +142,17 @@ class TestJupyterNotebook(unittest.TestCase):
         # print(result)
 
     def checker(self) -> None:
-        # only report detailed error once.
-        if self.err_has_been_reported:
+
+        if self.err_has_been_reported is None:
             return
 
-        msg = "See error message above."
-        self.assertTrue(
-            False,
-            msg=msg,
-        )
+        # only report detailed error once.
+        if self.err_has_been_reported:
+            msg = "See error message above."
+            return self.assertTrue(
+                False,
+                msg=msg,
+            )
 
         self.err_has_been_reported = True
         if not self.is_compilable:
