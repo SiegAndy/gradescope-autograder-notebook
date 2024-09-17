@@ -9,6 +9,7 @@ from typing import Any, Callable, List
 from gradescope_utils.autograder_utils.files import SUBMISSION_BASE
 from testbook import testbook
 from testbook.client import TestbookNotebookClient
+from tqdm import tqdm
 
 from default_import import import_checker_stmt
 from solution import (
@@ -131,11 +132,11 @@ class TestJupyterNotebook(unittest.TestCase):
             sys.stdout = self.original_stdout
 
     def method_wrapper(
-        self, method: Callable, *inputs, suppress_print: bool = True
+        self, method: Callable, *inputs, suppress_print: bool = True, **kargs
     ) -> Any:
         if suppress_print:
             self.suppress_print(True)
-        result = method(*inputs)
+        result = method(*inputs, **kargs)
         if suppress_print:
             self.suppress_print(False)
         return result
@@ -189,5 +190,6 @@ class TestJupyterNotebook(unittest.TestCase):
                 f"Import(s) not allowed: {', '.join(f'<{name}>' for name in self.imported_disallowed_pkgs)}.",
             )
 
-    def clear_notebook_output(self):
-        self.client.inject(r"%reset -f in out", pop=True)
+    def clear_notebook_output(self, curr_line_count: int, line_limits: int = 50):
+        if curr_line_count % line_limits == 0:
+            self.client.inject(r"%reset -f in out", pop=True)
