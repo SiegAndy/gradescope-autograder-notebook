@@ -11,6 +11,19 @@ from testbook import testbook
 from testbook.client import TestbookNotebookClient
 
 from default_import import import_checker_stmt
+from solution import (
+    load_file,
+    tokenize_space,
+    tokenize_fancy,
+    tokenize_4grams,
+    stemming,
+    stopping,
+    tokenization,
+    heaps,
+    statistics,
+)
+
+DATAPATH = "./data"
 
 if sys.platform.startswith("win"):
     import asyncio
@@ -31,8 +44,8 @@ class SuppressClass(io.StringIO):
 
 class TestJupyterNotebook(unittest.TestCase):
     jupyter_notebook_file_path: str  # path to jupyter notebook
-    data_file_path: str  # path to dataset
     notebook: testbook  # notebook class, use context manager to retrieve client
+    sentences: List[str] # loaded sentence from dataset
     is_compilable: bool  # is notebook compilable
     is_imports_allowed: bool  # is imports in notebook are all allowed
     err: Exception  # exception happened when try to run cell(s)
@@ -52,9 +65,10 @@ class TestJupyterNotebook(unittest.TestCase):
         cls.jupyter_notebook_file_path = os.path.join(
             SUBMISSION_BASE, jupyter_notebook_file_path
         )
-        cls.data_file_path = os.path.join(
-            SUBMISSION_BASE, data_file_path
-        )  # TODO: load dataset
+        cls.sentences = load_file(
+            os.path.join(DATAPATH, data_file_path),
+            gz_zip=True if data_file_path.endswith(".gz") else False,
+        )
         cls.notebook = testbook(cls.jupyter_notebook_file_path, execute=False)
         cls.is_compilable = None
         cls.imported_disallowed_pkgs = None
