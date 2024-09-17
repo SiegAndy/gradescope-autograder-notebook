@@ -45,7 +45,8 @@ class SuppressClass(io.StringIO):
 class TestJupyterNotebook(unittest.TestCase):
     jupyter_notebook_file_path: str  # path to jupyter notebook
     notebook: testbook  # notebook class, use context manager to retrieve client
-    sentences: List[str] # loaded sentence from dataset
+    sentences: List[str]  # loaded sentence from dataset
+    stopwords: List[str]  # loaded stopwords from dataset
     is_compilable: bool  # is notebook compilable
     is_imports_allowed: bool  # is imports in notebook are all allowed
     err: Exception  # exception happened when try to run cell(s)
@@ -66,8 +67,12 @@ class TestJupyterNotebook(unittest.TestCase):
             SUBMISSION_BASE, jupyter_notebook_file_path
         )
         cls.sentences = load_file(
-            os.path.join(DATAPATH, data_file_path),
+            data_file_path,
             gz_zip=True if data_file_path.endswith(".gz") else False,
+        )
+        cls.stopwords = load_file(
+            "stopwords.txt",
+            gz_zip=False,
         )
         cls.notebook = testbook(cls.jupyter_notebook_file_path, execute=False)
         cls.is_compilable = None
@@ -88,7 +93,7 @@ class TestJupyterNotebook(unittest.TestCase):
         if cls.is_compilable is not None:
             return
 
-        # self.suppress_print(cls, True)
+        cls.suppress_print(cls, True)
         try:
             # with self.notebook as notebook_kernel:
             # print(json.dumps(notebook_kernel.cells, indent=4))
@@ -183,3 +188,6 @@ class TestJupyterNotebook(unittest.TestCase):
                 self.allowed_imports,
                 f"Import(s) not allowed: {', '.join(f'<{name}>' for name in self.imported_disallowed_pkgs)}.",
             )
+
+    def clear_notebook_output(self):
+        self.client.inject(r"%reset -f in out", pop=True)
