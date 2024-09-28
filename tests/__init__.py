@@ -6,22 +6,23 @@ import sys
 import unittest
 from typing import Any, Callable, List
 
+from default_import import import_checker_stmt
 from gradescope_utils.autograder_utils.files import SUBMISSION_BASE
 from testbook import testbook
 from testbook.client import TestbookNotebookClient
 from tqdm import tqdm
 
-from default_import import import_checker_stmt
 from solution import (
+    heaps,
     load_file,
-    tokenize_space,
-    tokenize_fancy,
-    tokenize_4grams,
-    stemming,
+    statistics,
+    stemming_porter,
+    stemming_s,
     stopping,
     tokenization,
-    heaps,
-    statistics,
+    tokenize_4grams,
+    tokenize_fancy,
+    tokenize_space,
 )
 
 DATAPATH = "./data"
@@ -41,6 +42,18 @@ class SuppressClass(io.StringIO):
 
     def getvalue(self):
         return ""
+
+
+def exception_catcher(self: unittest.TestCase, func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except AssertionError:
+            raise
+        except Exception as e:
+            self.assertTrue(False, f"Code does not compile:\n{e}")
+
+    return wrapper
 
 
 class TestJupyterNotebook(unittest.TestCase):
@@ -109,6 +122,13 @@ class TestJupyterNotebook(unittest.TestCase):
             cls.is_compilable = False
             cls.err = e
             cls.err_has_been_reported = False
+
+    # def __getattribute__(self, name):
+    #     attr = super().__getattribute__(name)
+    #     # Apply the decorator to methods that start with 'test'
+    #     if name.startswith('test') and callable(attr):
+    #         return exception_catcher(self, attr)
+    #     return attr
 
     def setUp_kernel(self) -> TestbookNotebookClient:
         with self.notebook.client.setup_kernel(cleanup_kc=False):
