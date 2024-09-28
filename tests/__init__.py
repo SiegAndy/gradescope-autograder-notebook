@@ -55,6 +55,17 @@ def exception_catcher(self: unittest.TestCase, func):
 
     return wrapper
 
+def pick_up_submission_notebook(submission_folder: str = SUBMISSION_BASE):
+    # List all files in the given folder
+    files = os.listdir(submission_folder)
+    
+    # Filter files to include only .ipynb files
+    ipynb_files = [f for f in files if f.endswith('.ipynb')]
+    
+    # Return the first .ipynb file if it exists, otherwise None
+    return ipynb_files[0] if ipynb_files else None
+    
+
 
 class TestJupyterNotebook(unittest.TestCase):
     jupyter_notebook_file_path: str  # path to jupyter notebook
@@ -77,6 +88,18 @@ class TestJupyterNotebook(unittest.TestCase):
         cls.original_stdout = sys.stdout
         cls.suppress_text = io.StringIO()
         cls.allowed_imports = allowed_imports
+        
+        cls.is_compilable = None
+        cls.imported_disallowed_pkgs = None
+        cls.err = None
+        cls.err_has_been_reported = None
+        
+        jupyter_notebook_file_path = pick_up_submission_notebook(SUBMISSION_BASE)
+        
+        if jupyter_notebook_file_path is None:
+            cls.is_compilable = False
+            cls.err_has_been_reported = False
+            cls.err = "Fail to find an valid notebook file in the submission! Please upload a valid jupyter notebook file!"
         cls.jupyter_notebook_file_path = os.path.join(
             SUBMISSION_BASE, jupyter_notebook_file_path
         )
@@ -89,10 +112,7 @@ class TestJupyterNotebook(unittest.TestCase):
             gz_zip=False,
         )
         cls.notebook = testbook(cls.jupyter_notebook_file_path, execute=False)
-        cls.is_compilable = None
-        cls.imported_disallowed_pkgs = None
-        cls.err = None
-        cls.err_has_been_reported = None
+        
 
         cls.setUp_kernel(cls)
         cls.compilablity()
@@ -183,31 +203,31 @@ class TestJupyterNotebook(unittest.TestCase):
 
     def checker(self) -> None:
 
-        if self.err_has_been_reported is None:
+        if self.__class__.err_has_been_reported is None:
             return
 
         # only report detailed error once.
-        if self.err_has_been_reported:
+        if self.__class__.err_has_been_reported:
             msg = "See error message above."
             return self.assertTrue(
                 False,
                 msg=msg,
             )
 
-        self.err_has_been_reported = True
-        if not self.is_compilable:
-            self.exit_kernel()
-            msg = f"The notebook is not compilable! Detail: \n{self.err}"
+        self.__class__.err_has_been_reported = True
+        if not self.__class__.is_compilable:
+            self.__class__.exit_kernel(self=self)
+            msg = f"The notebook is not compilable! Detail: \n{self.__class__.err}"
             self.assertTrue(
-                self.is_compilable,
+                self.__class__.is_compilable,
                 msg=msg,
             )
 
-        if len(self.imported_disallowed_pkgs) > 0:
+        if len(self.__class__.imported_disallowed_pkgs) > 0:
             self.assertIn(
-                self.imported_disallowed_pkgs,
-                self.allowed_imports,
-                f"Import(s) not allowed: {', '.join(f'<{name}>' for name in self.imported_disallowed_pkgs)}.",
+                self.__class__.imported_disallowed_pkgs,
+                self.__class__.allowed_imports,
+                f"Import(s) not allowed: {', '.join(f'<{name}>' for name in self.__class__.imported_disallowed_pkgs)}.",
             )
 
     def clear_notebook_output(self, curr_line_count: int, line_limits: int = 50):

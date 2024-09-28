@@ -18,14 +18,6 @@ from tests import (
 
 
 class TestNotebookCompilable(TestJupyterNotebook):
-    tokenized_fancy_solution: List[str]
-    tokenized_fancy_student: List[str]
-    tokenized_fancy_with_stopping_solution: List[str]
-    tokenized_fancy_with_stopping_student: List[str]
-    tokenized_fancy_with_stopping_and_stemming_solution: List[str]
-    tokenized_fancy_with_stopping_and_stemming_student: List[str]
-    tokenization_solution: List[Tuple[str, List[str]]]
-    tokenization_student: List[Tuple[str, List[str]]]
 
     @classmethod
     def setUpClass(cls):
@@ -101,36 +93,6 @@ class TestNotebookCompilable(TestJupyterNotebook):
             tqdm_desc="test_tokenize_space_noStopping_and_stemming_s",
             prerequisite=("tokenized_space_{store_type}", "tokenize_space"),
         )
-        # try:
-        #     # get target function reflection
-        #     tokenizer_method = self.client.ref("tokenize_space")
-        #     stemming_method = self.client.ref("stemming_s")
-
-        #     for idx, curr_sentence in tqdm(
-        #         enumerate(self.sentences),
-        #         desc="test_tokenization_no_stopping_and_stemming_s",
-        #     ):
-        #         # tokenize the sentence using solution code
-        #         golden_results = stemming_s(tokenize_space(curr_sentence))
-
-        #         # cleanup the notebook output as ipython core will give out warning
-        #         # when output has 200? more line and corrupts reflection of the function output
-        #         self.clear_notebook_output(idx)
-
-        #         # check the output of notebook
-        #         tokenized_results = self.method_wrapper(tokenizer_method, curr_sentence)
-        #         tokenized_results = self.method_wrapper(
-        #             stemming_method, tokenized_results
-        #         )
-
-        #         self.assertion_set(
-        #             curr_sentence=curr_sentence,
-        #             golden_results=golden_results,
-        #             tokenized_results=tokenized_results,
-        #         )
-
-        # except Exception as e:
-        #     self.assertTrue(False, f"Code does not compile:\n{e}")
 
     @weight(0)
     @visibility("visible")
@@ -143,37 +105,7 @@ class TestNotebookCompilable(TestJupyterNotebook):
             tqdm_desc="test_tokenize_space_noStopping_and_stemming_porter",
             prerequisite=("tokenized_space_{store_type}", "tokenize_space"),
         )
-        # self.checker()
-        # try:
-        #     # get target function reflection
-        #     tokenizer_method = self.client.ref("tokenize_space")
-        #     stemming_method = self.client.ref("stemming_porter")
 
-        #     for idx, curr_sentence in tqdm(
-        #         enumerate(self.sentences),
-        #         desc="test_tokenize_space_noStopping_and_stemming_porter",
-        #     ):
-        #         # tokenize the sentence using solution code
-        #         golden_results = stemming_porter(tokenize_space(curr_sentence))
-
-        #         # cleanup the notebook output as ipython core will give out warning
-        #         # when output has 200? more line and corrupts reflection of the function output
-        #         self.clear_notebook_output(idx)
-
-        #         # check the output of notebook
-        #         tokenized_results = self.method_wrapper(tokenizer_method, curr_sentence)
-        #         tokenized_results = self.method_wrapper(
-        #             stemming_method, tokenized_results
-        #         )
-
-        #         self.assertion_set(
-        #             curr_sentence=curr_sentence,
-        #             golden_results=golden_results,
-        #             tokenized_results=tokenized_results,
-        #         )
-
-        # except Exception as e:
-        #     self.assertTrue(False, f"Code does not compile:\n{e}")
 
     @weight(0)
     @visibility("visible")
@@ -186,48 +118,6 @@ class TestNotebookCompilable(TestJupyterNotebook):
             tqdm_desc="test_tokenize_fancy_yesStopping_and_stemming_porter",
             prerequisite=("tokenized_fancy_yesStopping_{store_type}", "tokenize_fancy, stopping"),
         )
-        # self.checker()
-        # try:
-        #     # get target function reflection
-        #     stemming_method = self.client.ref("stemming_porter")
-
-        #     self.assertEqual(
-        #         len(self.sentences),
-        #         len(self.tokenized_fancy_with_stopping_student),
-        #         "Need to first pass the test: tokenize_fancy_with_stopping!",
-        #     )
-
-        #     for idx, (curr_sentence, solution_tokens, student_tokens) in tqdm(
-        #         enumerate(
-        #             zip(
-        #                 self.sentences,
-        #                 self.tokenized_fancy_with_stopping_solution,
-        #                 self.tokenized_fancy_with_stopping_student,
-        #             )
-        #         ),
-        #         desc="test_tokenize_fancy_yesStopping_and_stemming_porter",
-        #     ):
-        #         # tokenize the sentence using solution code
-        #         golden_results = stemming_porter(solution_tokens)
-
-        #         # cleanup the notebook output as ipython core will give out warning
-        #         # when output has 200? more line and corrupts reflection of the function output
-        #         self.clear_notebook_output(idx)
-
-        #         # check the output of notebook
-        #         stemming_results = self.method_wrapper(
-        #             stemming_method,
-        #             student_tokens,
-        #         )
-
-        #         self.assertion_set(
-        #             curr_sentence=curr_sentence,
-        #             golden_results=golden_results,
-        #             tokenized_results=stemming_results,
-        #         )
-
-        # except Exception as e:
-        #     self.assertTrue(False, f"Code does not compile:\n{e}")
 
     @weight(0)
     @visibility("visible")
@@ -347,11 +237,6 @@ class TestNotebookCompilable(TestJupyterNotebook):
         prev_solution_results, prev_students_results = self.prerequisite_check(
             prerequisite=("tokenization_fancy_yesStopping_and_stemming_porter_{store_type}", "tokenization(tokenize_type=\"fancy\", stopwords=stopwords, stemming_type=\"porter\")"),
         )
-        # self.assertEqual(
-        #     len(self.sentences),
-        #     len(self.tokenized_fancy_with_stopping_student),
-        #     "Need to first pass the test: tokenization_with_stopping_and_stemming!",
-        # )
         # get target function reflection
         statistics_method = self.client.ref("statistics")
 
@@ -414,8 +299,6 @@ class TestNotebookCompilable(TestJupyterNotebook):
             + f'Current sentence: "{curr_sentence}"\n'
             + f"Expect '{len(golden_results)}' tokens, "
             + f"but '{len(tokenized_results)}' received!\n"
-            # + "\n".join(golden_results)
-            # + f"Expected results: [{', '.join(golden_results)}]",
         )
 
         # check if sentence is tokenized into desired tokens
@@ -426,8 +309,6 @@ class TestNotebookCompilable(TestJupyterNotebook):
             + f'Current sentence: "{curr_sentence}"\n'
             + f"Expect results: {golden_results}, \n"
             + f"but received: {tokenized_results}",
-            # + f"Expect results: [{', '.join(golden_results)}]\n"
-            # + f"but received: [{', '.join(tokenized_results)}]",
         )
 
     def prerequisite_check(
