@@ -1,8 +1,6 @@
 from typing import Any, Callable, List
 
-from tqdm import tqdm
-
-from tests import TestJupyterNotebook, heaps, load_file, statistics, tokenization
+from tests import TestJupyterNotebook, heaps, load_file, statistics, tokenization, tqdm
 
 
 class TestPA1(TestJupyterNotebook):

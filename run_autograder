@@ -4,4 +4,6 @@
 
 cd /autograder/source
 
+export in_gradescope="true"
+
 python3 run_tests.py

@@ -1,13 +1,9 @@
 from gradescope_utils.autograder_utils.decorators import number, visibility, weight
-from tqdm import tqdm
 
 from tests import (
-    heaps,
-    statistics,
     stemming_porter,
     stemming_s,
     stopping,
-    tokenization,
     tokenize_4grams,
     tokenize_fancy,
     tokenize_space,

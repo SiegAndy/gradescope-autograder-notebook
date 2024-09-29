@@ -32,6 +32,10 @@ if sys.platform.startswith("win"):
 
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
+in_gradescope = True if os.environ.get("in_gradescope", False) else False
+
+tqdm = tqdm if not in_gradescope else lambda x, **_: x
+
 
 def exception_catcher(self: unittest.TestCase, func):
     def wrapper(*args, **kwargs):
