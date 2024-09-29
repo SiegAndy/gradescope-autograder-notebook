@@ -2,7 +2,7 @@ from typing import Any, Callable, List
 
 from tqdm import tqdm
 
-from tests import TestJupyterNotebook, load_file
+from tests import TestJupyterNotebook, heaps, load_file, statistics, tokenization
 
 
 class TestPA1(TestJupyterNotebook):
@@ -25,9 +25,8 @@ class TestPA1(TestJupyterNotebook):
             "stopwords.txt",
             gz_zip=False,
         )
-        super().setUpClass()    
+        super().setUpClass()
 
-    
     def assertion_set(
         self,
         curr_sentence: str,
@@ -41,7 +40,7 @@ class TestPA1(TestJupyterNotebook):
             "Output length does not match.\n"
             + f'Current sentence: "{curr_sentence}"\n'
             + f"Expect '{len(golden_results)}' tokens, "
-            + f"but '{len(tokenized_results)}' received!\n"
+            + f"but '{len(tokenized_results)}' received!\n",
         )
 
         # check if sentence is tokenized into desired tokens
@@ -69,7 +68,7 @@ class TestPA1(TestJupyterNotebook):
 
         attr_name, func_name = prerequisite
 
-        error_msg = f"Need to first pass the test for function(s): {func_name}!"
+        error_msg = f"Need to first pass the test for function(s): {func_name} !"
 
         result_attrs = []
         for store_type in ["solution", "student"]:
@@ -99,15 +98,13 @@ class TestPA1(TestJupyterNotebook):
             result_attrs.append(curr_attr)
         return result_attrs
 
-    def save_class_attr(self, tag_name: str, results_set: tuple[Any, Any]):
+    def save_class_attr(self, tag_name: str, results_set: tuple[Any, Any]) -> None:
         store_class_var = f"{tag_name}_{{store_type}}"
-        for results, store_type in zip(
-            results_set, ["solution", "student"]
-        ):
+        for results, store_type in zip(results_set, ["solution", "student"]):
             setattr(
                 self.__class__, store_class_var.format(store_type=store_type), results
             )
-    
+
     def no_prerequisite_tester(
         self,
         function_name: str,
@@ -116,7 +113,7 @@ class TestPA1(TestJupyterNotebook):
         tag_name: str = None,
         tqdm_desc: str = None,
         **function_kwargs,
-    ):
+    ) -> None:
         self.checker()
         solution_results, student_results = [], []
 
@@ -125,14 +122,18 @@ class TestPA1(TestJupyterNotebook):
 
         for idx, curr_sentence in tqdm(enumerate(self.sentences), desc=tqdm_desc):
             # tokenize the sentence using solution code
-            golden_results = solution_function(curr_sentence, *function_args, **function_kwargs)
+            golden_results = solution_function(
+                curr_sentence, *function_args, **function_kwargs
+            )
 
             # cleanup the notebook output as ipython core will give out warning
             # when output has 200? more line and corrupts reflection of the function output
             self.clear_notebook_output(idx)
 
             # check the output of notebook
-            target_results = self.method_wrapper(submission_method, curr_sentence, *function_args, **function_kwargs)
+            target_results = self.method_wrapper(
+                submission_method, curr_sentence, *function_args, **function_kwargs
+            )
 
             self.assertion_set(
                 curr_sentence=curr_sentence,
@@ -145,9 +146,9 @@ class TestPA1(TestJupyterNotebook):
 
         self.save_class_attr(
             tag_name=tag_name if tag_name is not None else function_name,
-            results_set=[solution_results, student_results]
+            results_set=[solution_results, student_results],
         )
-        
+
     def prerequisite_tester(
         self,
         function_name: str,
@@ -157,7 +158,7 @@ class TestPA1(TestJupyterNotebook):
         tqdm_desc: str = None,
         prerequisite: tuple[str, str] = None,
         **function_kwargs,
-    ):
+    ) -> None:
         self.checker()
         prev_solution_results, prev_students_results = self.prerequisite_check(
             prerequisite=prerequisite
@@ -201,6 +202,169 @@ class TestPA1(TestJupyterNotebook):
 
         self.save_class_attr(
             tag_name=tag_name if tag_name is not None else function_name,
-            results_set=[solution_results, student_results]
+            results_set=[solution_results, student_results],
         )
-        
+
+    def tokenization_tester(
+        self,
+        tag_name: str,
+        stopwords: list[str],
+        tokenizer_type: str,
+        stemming_type: str,
+        tqdm_desc: str = None,
+    ) -> None:
+
+        self.checker()
+        # get target function reflection
+        tokenization_method = self.client.ref("tokenization")
+
+        solution_results, student_results = [], []
+
+        for idx, curr_sentence in tqdm(
+            enumerate(self.sentences),
+            desc=tqdm_desc,
+        ):
+            # tokenize the sentence using solution code
+            golden_results = tokenization(
+                [curr_sentence],
+                stopwords=stopwords,
+                tokenizer_type=tokenizer_type,
+                stemming_type=stemming_type,
+            )
+
+            # cleanup the notebook output as ipython core will give out warning
+            # when output has 200? more line and corrupts reflection of the function output
+            self.clear_notebook_output(idx)
+
+            # check the output of notebook
+            tokenized_results = self.method_wrapper(
+                tokenization_method,
+                [curr_sentence],
+                stopwords=stopwords,
+                tokenizer_type=tokenizer_type,
+                stemming_type=stemming_type,
+            )
+
+            for (curr_golden_token, curr_golden_subtokens), (
+                curr_student_token,
+                curr_student_subtokens,
+            ) in zip(golden_results, tokenized_results):
+                # Check each subtoken list, sort the list by alphabetic order
+
+                # check if sentence is tokenized into desired amount of token
+                self.assertEqual(
+                    curr_golden_token,
+                    curr_student_token,
+                    "(main) Token mismatch.\n"
+                    + f"Expect token '{curr_golden_token}', "
+                    + f"but '{curr_student_token}' received!\n",
+                )
+
+                # check if sentence is tokenized into desired tokens
+                self.assertEqual(
+                    sorted(curr_golden_subtokens),
+                    sorted(curr_student_subtokens),
+                    "Output does not match.\n"
+                    + f'Current sentence: "{curr_sentence}"\n'
+                    + f"Expect results: {curr_golden_subtokens}\n"
+                    + f"but received: {curr_student_subtokens}",
+                )
+
+            solution_results.extend(golden_results)
+            student_results.extend(tokenized_results)
+
+        self.save_class_attr(
+            tag_name=tag_name, results_set=[solution_results, student_results]
+        )
+
+    def heaps_tester(
+        self,
+        prerequisite: tuple[str, str],
+    ) -> None:
+        self.checker()
+
+        prev_solution_results, prev_students_results = self.prerequisite_check(
+            prerequisite=prerequisite,
+        )
+        # get target function reflection
+        heaps_method = self.client.ref("heaps")
+
+        # tokenize the sentence using solution code
+        golden_results = heaps(prev_solution_results)
+        heaps_results = self.method_wrapper(
+            heaps_method,
+            prev_students_results,
+        )
+        # check if sentence is tokenized into desired amount of token
+        self.assertEqual(
+            len(golden_results),
+            len(heaps_results),
+            "Output length does not match.\n"
+            + f"Expect '{len(golden_results)}' entries but '{len(heaps_results)}' received!\n",
+        )
+
+        for curr_golden, curr_student in zip(golden_results, heaps_results):
+            # check if heaps number matches
+            self.assertEqual(
+                list(curr_golden),
+                list(curr_student),
+                "Output does not match.\n"
+                + f"Expect results: {list(curr_golden)}\n"
+                + f"but received: {list(curr_student)}",
+            )
+
+    def zipf_tester(
+        self,
+        prerequisite: tuple[str, str],
+    ) -> None:
+        self.checker()
+        prev_solution_results, prev_students_results = self.prerequisite_check(
+            prerequisite=prerequisite,
+        )
+        # get target function reflection
+        statistics_method = self.client.ref("statistics")
+
+        # tokenize the sentence using solution code
+        (
+            golden_token_count,
+            golden_unique_token_count,
+            golden_top_100_freq_tokens,
+        ) = statistics(prev_solution_results)
+        (
+            student_token_count,
+            student_unique_token_count,
+            student_top_100_freq_tokens,
+        ) = self.method_wrapper(
+            statistics_method,
+            prev_students_results,
+        )
+
+        # check if total token count matches
+        self.assertEqual(
+            golden_token_count,
+            student_token_count,
+            "Token count does not match.\n"
+            + f"Expect '{golden_token_count}' tokens but '{student_token_count}' received!\n",
+        )
+
+        # check if unique token count matches
+        self.assertEqual(
+            golden_unique_token_count,
+            student_unique_token_count,
+            "Unique token count does not match.\n"
+            + f"Expect '{golden_unique_token_count}' unique tokens but '{student_unique_token_count}' received!\n",
+        )
+
+        # check if top 100 frequent tokens match
+        for curr_golden, curr_student in zip(
+            sorted(golden_top_100_freq_tokens, key=lambda x: (x[1], x[0])),
+            sorted(student_top_100_freq_tokens, key=lambda x: (x[1], x[0])),
+        ):
+            # check if heaps number matches
+            self.assertEqual(
+                list(curr_golden),
+                list(curr_student),
+                "Top 100 frequent tokens do not match.\n"
+                + f"Expect result: {list(curr_golden)}\n"
+                + f"but received: {list(curr_student)}",
+            )

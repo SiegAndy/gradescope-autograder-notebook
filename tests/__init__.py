@@ -31,7 +31,7 @@ if sys.platform.startswith("win"):
     import asyncio
 
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    
+
 
 def exception_catcher(self: unittest.TestCase, func):
     def wrapper(*args, **kwargs):
@@ -44,16 +44,16 @@ def exception_catcher(self: unittest.TestCase, func):
 
     return wrapper
 
+
 def pick_up_submission_notebook(submission_folder: str = SUBMISSION_BASE):
     # List all files in the given folder
     files = os.listdir(submission_folder)
-    
+
     # Filter files to include only .ipynb files
-    ipynb_files = [f for f in files if f.endswith('.ipynb')]
-    
+    ipynb_files = [f for f in files if f.endswith(".ipynb")]
+
     # Return the first .ipynb file if it exists, otherwise None
     return ipynb_files[0] if ipynb_files else None
-    
 
 
 class TestJupyterNotebook(unittest.TestCase):
@@ -73,14 +73,14 @@ class TestJupyterNotebook(unittest.TestCase):
     ):
         cls.original_stdout = sys.stdout
         cls.suppress_text = io.StringIO()
-        
+
         cls.is_compilable = None
         cls.imported_disallowed_pkgs = None
         cls.err = None
         cls.err_has_been_reported = None
-        
+
         jupyter_notebook_file_path = pick_up_submission_notebook(SUBMISSION_BASE)
-        
+
         if jupyter_notebook_file_path is None:
             cls.is_compilable = False
             cls.err_has_been_reported = False
@@ -89,7 +89,6 @@ class TestJupyterNotebook(unittest.TestCase):
             SUBMISSION_BASE, jupyter_notebook_file_path
         )
         cls.notebook = testbook(cls.jupyter_notebook_file_path, execute=False)
-        
 
         cls.setUp_kernel(cls)
         cls.compilablity()
@@ -123,7 +122,7 @@ class TestJupyterNotebook(unittest.TestCase):
     def __getattribute__(self, name):
         attr = super().__getattribute__(name)
         # Apply the decorator to methods that start with 'test'
-        if name.startswith('test') and callable(attr):
+        if name.startswith("test") and callable(attr):
             return exception_catcher(self, attr)
         return attr
 

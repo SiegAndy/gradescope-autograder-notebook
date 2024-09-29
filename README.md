@@ -36,7 +36,7 @@ In `tests/__init__.py`, a few utilities are provided.
 ## COMPSCI 446 PA1
 In `tests/pa1.py`, a unittest class `TestPA1` designed specifically for the programming assignment 1 of COMPSCI446: Search Engine (Fall 2024).
 
-All the unittest class in `test_compilability.py, test_statistic.py, test_tokenization.py` are inherited from `TestPA1` class.
+All the unittest class in `test_compilability.py` and `test_tokenization.py` are inherited from `TestPA1` class.
 
 The class `TestPA1` provides additional utilities:
 * check and store stopwords and dataset in the class variable.
