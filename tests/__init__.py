@@ -31,18 +31,7 @@ if sys.platform.startswith("win"):
     import asyncio
 
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-
-class SuppressClass(io.StringIO):
-    def __init__(
-        self,
-        *args,
-    ):
-        io.StringIO.__init__(self, *args)
-
-    def getvalue(self):
-        return ""
-
+    
 
 def exception_catcher(self: unittest.TestCase, func):
     def wrapper(*args, **kwargs):
@@ -81,13 +70,9 @@ class TestJupyterNotebook(unittest.TestCase):
     @classmethod
     def setUpClass(
         cls,
-        jupyter_notebook_file_path: str,
-        data_file_path: str,
-        allowed_imports: List[str] = None,
     ):
         cls.original_stdout = sys.stdout
         cls.suppress_text = io.StringIO()
-        cls.allowed_imports = allowed_imports
         
         cls.is_compilable = None
         cls.imported_disallowed_pkgs = None
@@ -102,14 +87,6 @@ class TestJupyterNotebook(unittest.TestCase):
             cls.err = "Fail to find an valid notebook file in the submission! Please upload a valid jupyter notebook file!"
         cls.jupyter_notebook_file_path = os.path.join(
             SUBMISSION_BASE, jupyter_notebook_file_path
-        )
-        cls.sentences = load_file(
-            data_file_path,
-            gz_zip=True if data_file_path.endswith(".gz") else False,
-        )
-        cls.stopwords = load_file(
-            "stopwords.txt",
-            gz_zip=False,
         )
         cls.notebook = testbook(cls.jupyter_notebook_file_path, execute=False)
         
@@ -143,12 +120,12 @@ class TestJupyterNotebook(unittest.TestCase):
             cls.err = e
             cls.err_has_been_reported = False
 
-    # def __getattribute__(self, name):
-    #     attr = super().__getattribute__(name)
-    #     # Apply the decorator to methods that start with 'test'
-    #     if name.startswith('test') and callable(attr):
-    #         return exception_catcher(self, attr)
-    #     return attr
+    def __getattribute__(self, name):
+        attr = super().__getattribute__(name)
+        # Apply the decorator to methods that start with 'test'
+        if name.startswith('test') and callable(attr):
+            return exception_catcher(self, attr)
+        return attr
 
     def setUp_kernel(self) -> TestbookNotebookClient:
         with self.notebook.client.setup_kernel(cleanup_kc=False):

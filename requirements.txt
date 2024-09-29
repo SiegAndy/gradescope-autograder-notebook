@@ -1,3 +1,5 @@
 gradescope-utils>=0.3.1
-dockerfile-parse
-pyyaml
+tqdm
+testbook
+ipykernel
+matplotlib
