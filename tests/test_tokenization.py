@@ -206,7 +206,7 @@ class TestTokenization(TestPA1):
             )
         )
 
-    @weight(4)
+    @weight(2.5)
     @visibility("after_due_date")
     @number("1.6.1")
     def test_161_statistics_tokenization_space_yesStopping_and_stemming_porter(self):
@@ -217,7 +217,7 @@ class TestTokenization(TestPA1):
             )
         )
 
-    @weight(4)
+    @weight(2.5)
     @visibility("after_due_date")
     @number("1.6.2")
     def test_162_statistics_tokenization_fancy_yesStopping_and_stemming_porter(self):
