@@ -15,7 +15,7 @@ class TestTokenization(TestPA1):
     @classmethod
     def setUpClass(cls):
         super().setUpClass(
-            data_file_path="P1-train.gz",
+            data_file_path="webpage.gz",
             allowed_imports=["re"],
         )
         cls.sentences = cls.sentences[:1000]
@@ -53,7 +53,7 @@ class TestTokenization(TestPA1):
             tqdm_desc="test_tokenize_fancy",
         )
 
-    @weight(0)
+    @weight(5)
     @visibility("after_due_date")
     @number("1.2.1")
     def test_121_tokenize_space_yesStopping(self):
@@ -79,7 +79,7 @@ class TestTokenization(TestPA1):
             stopwords=self.stopwords,
         )
 
-    @weight(0)
+    @weight(5)
     @visibility("after_due_date")
     @number("1.3.1")
     def test_131_tokenize_space_noStopping_and_stemming_s(self):
@@ -160,7 +160,7 @@ class TestTokenization(TestPA1):
             ),
         )
 
-    @weight(5)
+    @weight(10)
     @visibility("after_due_date")
     @number("1.4.1")
     def test_141_tokenization_space_yesStopping_and_stemming_porter(self):
@@ -172,7 +172,7 @@ class TestTokenization(TestPA1):
             stemming_type="porter",
         )
 
-    @weight(5)
+    @weight(10)
     @visibility("after_due_date")
     @number("1.4.2")
     def test_142_tokenization_fancy_yesStopping_and_stemming_porter(self):
