@@ -155,6 +155,7 @@ class TestPA1(TestJupyterNotebook):
         tag_name: str = None,
         tqdm_desc: str = None,
         prerequisite: tuple[str, str] = None,
+        input_is_list: bool = False,
         **function_kwargs,
     ) -> None:
         self.checker()
@@ -175,25 +176,57 @@ class TestPA1(TestJupyterNotebook):
             ),
             desc=tqdm_desc,
         ):
-            # tokenize the sentence using solution code
-            curr_solution_results = solution_function(
-                solution_tokens, *function_args, **function_kwargs
-            )
+            if not input_is_list:
+                # tokenize the sentence using solution code
+                curr_solution_results = solution_function(
+                    solution_tokens, *function_args, **function_kwargs
+                )
 
-            # cleanup the notebook output as ipython core will give out warning
-            # when output has 200? more line and corrupts reflection of the function output
-            self.clear_notebook_output(idx)
+                # cleanup the notebook output as ipython core will give out warning
+                # when output has 200? more line and corrupts reflection of the function output
+                self.clear_notebook_output(idx)
 
-            # check the output of notebook
-            curr_students_results = self.method_wrapper(
-                student_method, student_tokens, *function_args, **function_kwargs
-            )
+                # check the output of notebook
+                curr_students_results = self.method_wrapper(
+                    student_method, student_tokens, *function_args, **function_kwargs
+                )
 
-            self.assertion_set(
-                curr_sentence=curr_sentence,
-                golden_results=curr_solution_results,
-                tokenized_results=curr_students_results,
-            )
+                self.assertion_set(
+                    curr_sentence=curr_sentence,
+                    golden_results=curr_solution_results,
+                    tokenized_results=curr_students_results,
+                )
+
+            else:
+                curr_solution_results = []
+                curr_students_results = []
+                for solution_token, student_token in zip(
+                    solution_tokens, student_tokens
+                ):
+                    # tokenize the sentence using solution code
+                    curr_solution_result = solution_function(
+                        solution_token, *function_args, **function_kwargs
+                    )
+
+                    # cleanup the notebook output as ipython core will give out warning
+                    # when output has 200? more line and corrupts reflection of the function output
+                    self.clear_notebook_output(idx)
+
+                    # check the output of notebook
+                    curr_students_result = self.method_wrapper(
+                        student_method,
+                        student_token,
+                        *function_args,
+                        **function_kwargs,
+                    )
+
+                    self.assertion_set(
+                        curr_sentence=curr_sentence,
+                        golden_results=curr_solution_result,
+                        tokenized_results=curr_students_result,
+                    )
+                    curr_solution_results.append(curr_solution_result)
+                    curr_students_results.append(curr_students_result)
 
             solution_results.append(curr_solution_results)
             student_results.append(curr_students_results)

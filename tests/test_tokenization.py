@@ -1,3 +1,4 @@
+import unittest
 from gradescope_utils.autograder_utils.decorators import number, visibility, weight
 
 from tests import (
@@ -11,19 +12,19 @@ from tests import (
 from tests.pa1 import TestPA1
 
 
-class TestTokenization(TestPA1):
+class TestTokenization(TestPA1, unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass(
             data_file_path="webpage.gz",
             allowed_imports=["re"],
         )
-        cls.sentences = cls.sentences[:1000]
+        cls.sentences = cls.sentences[:100]
 
     @weight(5)
     @visibility("after_due_date")
-    @number("1.1.1")
-    def test_111_tokenize_space(self):
+    @number("2.1")
+    def test_21_tokenize_space(self):
         self.no_prerequisite_tester(
             function_name="tokenize_space",
             solution_function=tokenize_space,
@@ -33,8 +34,8 @@ class TestTokenization(TestPA1):
 
     @weight(10)
     @visibility("after_due_date")
-    @number("1.1.2")
-    def test_112_tokenize_4grams(self):
+    @number("2.2")
+    def test_22_tokenize_4grams(self):
         self.no_prerequisite_tester(
             function_name="tokenize_4grams",
             solution_function=tokenize_4grams,
@@ -44,8 +45,8 @@ class TestTokenization(TestPA1):
 
     @weight(5)
     @visibility("after_due_date")
-    @number("1.1.3")
-    def test_113_tokenize_fancy(self):
+    @number("2.3")
+    def test_23_tokenize_fancy(self):
         self.no_prerequisite_tester(
             function_name="tokenize_fancy",
             solution_function=tokenize_fancy,
@@ -55,8 +56,21 @@ class TestTokenization(TestPA1):
 
     @weight(5)
     @visibility("after_due_date")
-    @number("1.2.1")
-    def test_121_tokenize_space_yesStopping(self):
+    @number("2.4")
+    def test_24_tokenize_space_fancy(self):
+        self.prerequisite_tester(
+            function_name="tokenize_fancy",
+            solution_function=tokenize_fancy,
+            tag_name="tokenized_space_fancy",
+            tqdm_desc="test_tokenize_space_fancy",
+            prerequisite=("tokenized_space_{store_type}", "tokenize_space"),
+            input_is_list=True,
+        )
+
+    @weight(5)
+    @visibility("after_due_date")
+    @number("3.1")
+    def test_31_tokenize_space_yesStopping(self):
         self.prerequisite_tester(
             function_name="stopping",
             solution_function=stopping,
@@ -68,21 +82,25 @@ class TestTokenization(TestPA1):
 
     @weight(5)
     @visibility("after_due_date")
-    @number("1.2.2")
-    def test_122_tokenize_fancy_yesStopping(self):
+    @number("3.2")
+    def test_32_tokenize_space_fancy_yesStopping(self):
         self.prerequisite_tester(
             function_name="stopping",
             solution_function=stopping,
-            tag_name="tokenized_fancy_yesStopping",
-            tqdm_desc="test_tokenize_fancy_stopping",
-            prerequisite=("tokenized_fancy_{store_type}", "tokenize_fancy"),
+            tag_name="tokenized_space_fancy_yesStopping",
+            tqdm_desc="test_tokenize_space_fancy_stopping",
+            prerequisite=(
+                "tokenized_space_fancy_{store_type}",
+                "tokenize_space, tokenize_fancy",
+            ),
             stopwords=self.stopwords,
+            input_is_list=True,
         )
 
     @weight(5)
     @visibility("after_due_date")
-    @number("1.3.1")
-    def test_131_tokenize_space_noStopping_and_stemming_s(self):
+    @number("4.1")
+    def test_41_tokenize_space_noStopping_and_stemming_s(self):
         self.prerequisite_tester(
             function_name="stemming_s",
             solution_function=stemming_s,
@@ -93,20 +111,8 @@ class TestTokenization(TestPA1):
 
     @weight(5)
     @visibility("after_due_date")
-    @number("1.3.2")
-    def test_132_tokenize_space_noStopping_and_stemming_porter(self):
-        self.prerequisite_tester(
-            function_name="stemming_porter",
-            solution_function=stemming_porter,
-            tag_name="tokenized_space_noStopping_and_stemming_porter",
-            tqdm_desc="test_tokenize_space_noStopping_and_stemming_porter",
-            prerequisite=("tokenized_space_{store_type}", "tokenize_space"),
-        )
-
-    @weight(5)
-    @visibility("after_due_date")
-    @number("1.3.3")
-    def test_133_tokenize_space_yesStopping_and_stemming_porter(self):
+    @number("4.2")
+    def test_42_tokenize_space_yesStopping_and_stemming_porter(self):
         self.prerequisite_tester(
             function_name="stemming_porter",
             solution_function=stemming_porter,
@@ -120,50 +126,56 @@ class TestTokenization(TestPA1):
 
     @weight(5)
     @visibility("after_due_date")
-    @number("1.3.4")
-    def test_134_tokenize_fancy_yesStopping_and_stemming_s(self):
+    @number("4.3")
+    def test_43_tokenize_space_fancy_yesStopping_and_stemming_s(self):
         self.prerequisite_tester(
             function_name="stemming_s",
             solution_function=stemming_s,
-            tag_name="tokenize_fancy_yesStopping_and_stemming_s",
-            tqdm_desc="test_tokenize_fancy_yesStopping_and_stemming_s",
+            tag_name="tokenize_space_fancy_yesStopping_and_stemming_s",
+            tqdm_desc="test_tokenize_space_fancy_yesStopping_and_stemming_s",
             prerequisite=(
-                "tokenized_fancy_yesStopping_{store_type}",
-                "tokenize_fancy, stopping",
+                "tokenized_space_fancy_yesStopping_{store_type}",
+                "tokenize_space, tokenize_fancy, stopping",
             ),
+            input_is_list=True,
         )
 
     @weight(5)
     @visibility("after_due_date")
-    @number("1.3.5")
-    def test_135_tokenize_fancy_noStopping_and_stemming_porter(self):
+    @number("4.4")
+    def test_44_tokenize_space_fancy_noStopping_and_stemming_porter(self):
         self.prerequisite_tester(
             function_name="stemming_porter",
             solution_function=stemming_porter,
-            tag_name="tokenize_fancy_noStopping_and_stemming_porter",
-            tqdm_desc="test_tokenize_fancy_noStopping_and_stemming_porter",
-            prerequisite=("tokenized_fancy_{store_type}", "tokenize_fancy"),
+            tag_name="tokenize_space_fancy_noStopping_and_stemming_porter",
+            tqdm_desc="test_tokenize_space_fancy_noStopping_and_stemming_porter",
+            prerequisite=(
+                "tokenized_space_fancy_{store_type}",
+                "tokenize_space, tokenize_fancy",
+            ),
+            input_is_list=True,
         )
 
     @weight(5)
     @visibility("after_due_date")
-    @number("1.3.6")
-    def test_136_tokenize_fancy_yesStopping_and_stemming_porter(self):
+    @number("4.5")
+    def test_45_tokenize_space_fancy_yesStopping_and_stemming_porter(self):
         self.prerequisite_tester(
             function_name="stemming_porter",
             solution_function=stemming_porter,
-            tag_name="tokenize_fancy_yesStopping_and_stemming_porter",
-            tqdm_desc="test_tokenize_fancy_yesStopping_and_stemming_porter",
+            tag_name="tokenize_space_fancy_yesStopping_and_stemming_porter",
+            tqdm_desc="test_tokenize_space_fancy_yesStopping_and_stemming_porter",
             prerequisite=(
-                "tokenized_fancy_yesStopping_{store_type}",
-                "tokenize_fancy, stopping",
+                "tokenized_space_fancy_yesStopping_{store_type}",
+                "tokenize_space, tokenize_fancy, stopping",
             ),
+            input_is_list=True,
         )
 
     @weight(10)
     @visibility("after_due_date")
-    @number("1.4.1")
-    def test_141_tokenization_space_yesStopping_and_stemming_porter(self):
+    @number("5.1")
+    def test_51_tokenization_space_yesStopping_and_stemming_porter(self):
         self.tokenization_tester(
             tag_name="tokenization_space_yesStopping_and_stemming_porter",
             tqdm_desc="test_tokenization_space_full",
@@ -174,8 +186,8 @@ class TestTokenization(TestPA1):
 
     @weight(10)
     @visibility("after_due_date")
-    @number("1.4.2")
-    def test_142_tokenization_fancy_yesStopping_and_stemming_porter(self):
+    @number("5.2")
+    def test_52_tokenization_fancy_yesStopping_and_stemming_porter(self):
         self.tokenization_tester(
             tag_name="tokenization_fancy_yesStopping_and_stemming_porter",
             tqdm_desc="test_tokenization_fancy_full",
@@ -186,8 +198,8 @@ class TestTokenization(TestPA1):
 
     @weight(4)
     @visibility("after_due_date")
-    @number("1.5.1")
-    def test_151_heaps_tokenization_space_yesStopping_and_stemming_porter(self):
+    @number("6.1")
+    def test_61_heaps_tokenization_space_yesStopping_and_stemming_porter(self):
         self.heaps_tester(
             prerequisite=(
                 "tokenization_space_yesStopping_and_stemming_porter_{store_type}",
@@ -197,8 +209,8 @@ class TestTokenization(TestPA1):
 
     @weight(4)
     @visibility("after_due_date")
-    @number("1.5.2")
-    def test_151_heaps_tokenization_fancy_yesStopping_and_stemming_porter(self):
+    @number("6.2")
+    def test_61_heaps_tokenization_fancy_yesStopping_and_stemming_porter(self):
         self.heaps_tester(
             prerequisite=(
                 "tokenization_fancy_yesStopping_and_stemming_porter_{store_type}",
@@ -208,8 +220,8 @@ class TestTokenization(TestPA1):
 
     @weight(2.5)
     @visibility("after_due_date")
-    @number("1.6.1")
-    def test_161_statistics_tokenization_space_yesStopping_and_stemming_porter(self):
+    @number("7.1")
+    def test_71_statistics_tokenization_space_yesStopping_and_stemming_porter(self):
         self.zipf_tester(
             prerequisite=(
                 "tokenization_space_yesStopping_and_stemming_porter_{store_type}",
@@ -219,8 +231,8 @@ class TestTokenization(TestPA1):
 
     @weight(2.5)
     @visibility("after_due_date")
-    @number("1.6.2")
-    def test_162_statistics_tokenization_fancy_yesStopping_and_stemming_porter(self):
+    @number("7.2")
+    def test_72_statistics_tokenization_fancy_yesStopping_and_stemming_porter(self):
         self.zipf_tester(
             prerequisite=(
                 "tokenization_fancy_yesStopping_and_stemming_porter_{store_type}",
