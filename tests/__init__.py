@@ -37,16 +37,16 @@ in_gradescope = True if os.environ.get("in_gradescope", False) else False
 tqdm = tqdm if not in_gradescope else lambda x, **_: x
 
 
-def exception_catcher(self: unittest.TestCase, func):
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except AssertionError:
-            raise
-        except Exception as e:
-            self.assertTrue(False, f"Code does not compile:\n{e}")
+# def exception_catcher(self: unittest.TestCase, func):
+#     def wrapper(*args, **kwargs):
+#         try:
+#             return func(*args, **kwargs)
+#         except AssertionError:
+#             raise
+#         except Exception as e:
+#             self.assertTrue(False, f"Code does not compile:\n{e}")
 
-    return wrapper
+#     return wrapper
 
 
 def pick_up_submission_notebook(submission_folder: str = SUBMISSION_BASE):
@@ -123,12 +123,12 @@ class TestJupyterNotebook(unittest.TestCase):
             cls.err = e
             cls.err_has_been_reported = False
 
-    def __getattribute__(self, name):
-        attr = super().__getattribute__(name)
-        # Apply the decorator to methods that start with 'test'
-        if name.startswith("test") and callable(attr):
-            return exception_catcher(self, attr)
-        return attr
+    # def __getattribute__(self, name):
+    #     attr = super().__getattribute__(name)
+    #     # Apply the decorator to methods that start with 'test'
+    #     if name.startswith("test") and callable(attr):
+    #         return exception_catcher(self, attr)
+    #     return attr
 
     def setUp_kernel(self) -> TestbookNotebookClient:
         with self.notebook.client.setup_kernel(cleanup_kc=False):
