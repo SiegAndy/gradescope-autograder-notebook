@@ -24,6 +24,7 @@ from solution import (
     tokenize_fancy,
     tokenize_space,
 )
+from solution import version as solution_version
 
 DATAPATH = "./data"
 
@@ -112,6 +113,11 @@ class TestJupyterNotebook(unittest.TestCase):
             # with self.notebook as notebook_kernel:
             # print(json.dumps(notebook_kernel.cells, indent=4))
             cls.client.execute()
+            student_version = cls.client.ref("version")
+            if student_version != solution_version:
+                raise ValueError(
+                    f"Version Mismatched. Expects notebook version: '{student_version}', but submission has version: '{solution_version}'!"
+                )
             cls.suppress_print(cls, False)
             cls.is_compilable = True
             cls.err = None

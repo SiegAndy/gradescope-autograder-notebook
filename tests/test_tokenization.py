@@ -16,7 +16,7 @@ from tests.pa1 import TestPA1
 class TestTokenization(TestPA1):
     def setUp(self):
         return super().setUp()
-    
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass(

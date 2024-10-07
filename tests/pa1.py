@@ -30,7 +30,15 @@ class TestPA1(TestJupyterNotebook):
         curr_sentence: str,
         golden_results: List[Any],
         tokenized_results: List[Any],
+        overall_golden_results: List[Any] = None,
+        overall_tokenized_results: List[Any] = None,
     ) -> None:
+        expected_golden = golden_results
+        if overall_golden_results is not None:
+            expected_golden = overall_golden_results
+        received_tokenized = tokenized_results
+        if overall_tokenized_results is not None:
+            received_tokenized = overall_tokenized_results
         # check if sentence is tokenized into desired amount of token
         self.assertEqual(
             len(golden_results),
@@ -39,8 +47,8 @@ class TestPA1(TestJupyterNotebook):
             + f'Current sentence: "{curr_sentence}"\n'
             + f"Expect '{len(golden_results)}' tokens, "
             + f"but '{len(tokenized_results)}' received!\n"
-            + f"Expect results: {golden_results}, \n"
-            + f"but received: {tokenized_results}",
+            + f"Expect results: {expected_golden}, \n"
+            + f"but received: {received_tokenized}",
         )
 
         # check if sentence is tokenized into desired tokens
@@ -49,8 +57,8 @@ class TestPA1(TestJupyterNotebook):
             sorted(tokenized_results),
             "Output does not match.\n"
             + f'Current sentence: "{curr_sentence}"\n'
-            + f"Expect results: {golden_results}, \n"
-            + f"but received: {tokenized_results}",
+            + f"Expect results: {expected_golden}, \n"
+            + f"but received: {received_tokenized}",
         )
 
     def prerequisite_check(
@@ -194,14 +202,16 @@ class TestPA1(TestJupyterNotebook):
                     curr_solution_results = solution_function(
                         solution_tokens, *function_args, **function_kwargs
                     )
-
                     # cleanup the notebook output as ipython core will give out warning
                     # when output has 200? more line and corrupts reflection of the function output
                     self.clear_notebook_output(idx)
 
                     # check the output of notebook
                     curr_students_results = self.method_wrapper(
-                        student_method, student_tokens, *function_args, **function_kwargs
+                        student_method,
+                        student_tokens,
+                        *function_args,
+                        **function_kwargs,
                     )
 
                     self.assertion_set(
@@ -304,7 +314,7 @@ class TestPA1(TestJupyterNotebook):
                         curr_golden_token,
                         curr_student_token,
                         "(main) Token mismatch.\n"
-                        + f"Expect token '{curr_golden_token}', but '{curr_student_token}' received!"
+                        + f"Expect token '{curr_golden_token}', but '{curr_student_token}' received!",
                     )
 
                     # check if sentence is tokenized into desired tokens
@@ -357,16 +367,25 @@ class TestPA1(TestJupyterNotebook):
                 + f"but received: {heaps_results}",
             )
 
-            for curr_golden, curr_student in zip(golden_results, heaps_results):
-                # check if heaps number matches
+            if golden_results[-1] != heaps_results[-1]:
+                golden_token_count, golden_unique_token_count = golden_results[-1]
+                student_token_count, student_unique_token_count = heaps_results[-1]
+                # check if total token count matches
                 self.assertEqual(
-                    list(curr_golden),
-                    list(curr_student),
-                    "Output does not match.\n"
-                    + f"Expect '{list(curr_golden)}' entries but '{list(curr_student)}' received!\n"
-                    + f"Expect results: {golden_results}\n"
-                    + f"but received: {heaps_results}",
+                    golden_token_count,
+                    student_token_count,
+                    "Token count does not match.\n"
+                    + f"Expect '{golden_token_count}' tokens but '{student_token_count}' received!\n",
                 )
+
+                # check if unique token count matches
+                self.assertEqual(
+                    golden_unique_token_count,
+                    student_unique_token_count,
+                    "Unique token count does not match.\n"
+                    + f"Expect '{golden_unique_token_count}' unique tokens but '{student_unique_token_count}' received!\n",
+                )
+
         except AssertionError:
             raise
         except Exception as e:
