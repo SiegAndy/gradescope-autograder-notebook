@@ -3,6 +3,15 @@ from typing import Any, Callable, List
 from tests import TestJupyterNotebook, heaps, load_file, statistics, tokenization, tqdm
 
 
+class DebugMsgConfig(object):
+    show_msg: bool = True
+    test_tag: str = ""
+
+    def __init__(self, show_msg: bool = True, test_tag: str = ""):
+        self.show_msg = show_msg
+        self.test_tag = test_tag
+
+
 class TestPA1(TestJupyterNotebook):
     sentences: List[str]  # loaded sentence from dataset
     stopwords: List[str]  # loaded stopwords from dataset
@@ -32,6 +41,7 @@ class TestPA1(TestJupyterNotebook):
         tokenized_results: List[Any],
         overall_golden_results: List[Any] = None,
         overall_tokenized_results: List[Any] = None,
+        show_debug_msg: DebugMsgConfig = None,
     ) -> None:
         expected_golden = golden_results
         if overall_golden_results is not None:
@@ -40,29 +50,34 @@ class TestPA1(TestJupyterNotebook):
         if overall_tokenized_results is not None:
             received_tokenized = overall_tokenized_results
         # check if sentence is tokenized into desired amount of token
-        self.assertEqual(
+        self.assertion_wrapper(
+            self.assertEqual,
             len(golden_results),
             len(tokenized_results),
-            "Output length does not match.\n"
+            debug_msg="Output length does not match.\n"
             + f'Current sentence: "{curr_sentence}"\n'
             + f"Expect '{len(golden_results)}' tokens, "
             + f"but '{len(tokenized_results)}' received!\n"
             + f"Expect results: {expected_golden}, \n"
             + f"but received: {received_tokenized}",
+            show_debug_msg=show_debug_msg,
         )
 
         # check if sentence is tokenized into desired tokens
-        self.assertEqual(
+        self.assertion_wrapper(
+            self.assertEqual,
             sorted(golden_results),
             sorted(tokenized_results),
-            "Output does not match.\n"
+            debug_msg="Output does not match.\n"
             + f'Current sentence: "{curr_sentence}"\n'
             + f"Expect results: {expected_golden}, \n"
             + f"but received: {received_tokenized}",
+            show_debug_msg=show_debug_msg,
         )
 
     def prerequisite_check(
-        self, prerequisite: tuple[str, str] = None
+        self,
+        prerequisite: tuple[str, str] = None,
     ) -> tuple[Any, Any]:
         """
         Check whether expected class variable is stored and has the same size as self.sentences.
@@ -118,6 +133,34 @@ class TestPA1(TestJupyterNotebook):
                 self.__class__, store_class_var.format(store_type=store_type), results
             )
 
+    def assertion_wrapper(
+        self,
+        assertion_method: Callable,
+        *assertion_params,
+        debug_msg: str = None,
+        show_debug_msg: DebugMsgConfig = None,
+    ) -> None:
+        # show_debug_msg is none or show_debug_msg.show_msg is true: show the debug msg to student
+        # elsewise, do not show
+        if show_debug_msg is not None and not show_debug_msg.show_msg:
+            try:
+                assertion_method(*assertion_params, debug_msg)
+            except AssertionError as e:
+                prev_debug_msgs = getattr(self.__class__, "hidden_debug_msg", "")
+                curr_debug_msg = "\n".join(
+                    [prev_debug_msgs, "=" * 80, show_debug_msg.test_tag, "=" * 80, str(e), "=" * 80]
+                )
+                setattr(self.__class__, "hidden_debug_msg", curr_debug_msg)
+                # print("=" * 50)
+                # print(show_debug_msg.test_tag)
+                # print("=" * 50)
+                # print(e)
+                # print("=" * 50)
+                raise
+            # self.assertFalse(test_failed,msg=f"Test Failed!")
+        else:
+            assertion_method(*assertion_params, debug_msg)
+
     def no_prerequisite_tester(
         self,
         function_name: str,
@@ -125,6 +168,7 @@ class TestPA1(TestJupyterNotebook):
         *function_args,
         tag_name: str = None,
         tqdm_desc: str = None,
+        show_debug_msg: DebugMsgConfig = None,
         **function_kwargs,
     ) -> None:
         try:
@@ -153,6 +197,7 @@ class TestPA1(TestJupyterNotebook):
                     curr_sentence=curr_sentence,
                     golden_results=golden_results,
                     tokenized_results=target_results,
+                    show_debug_msg=show_debug_msg,
                 )
 
                 solution_results.append(golden_results)
@@ -176,6 +221,7 @@ class TestPA1(TestJupyterNotebook):
         tqdm_desc: str = None,
         prerequisite: tuple[str, str] = None,
         input_is_list: bool = False,
+        show_debug_msg: DebugMsgConfig = None,
         **function_kwargs,
     ) -> None:
         try:
@@ -218,6 +264,7 @@ class TestPA1(TestJupyterNotebook):
                         curr_sentence=curr_sentence,
                         golden_results=curr_solution_results,
                         tokenized_results=curr_students_results,
+                        show_debug_msg=show_debug_msg,
                     )
 
                 else:
@@ -247,6 +294,7 @@ class TestPA1(TestJupyterNotebook):
                             curr_sentence=curr_sentence,
                             golden_results=curr_solution_result,
                             tokenized_results=curr_students_result,
+                            show_debug_msg=show_debug_msg,
                         )
                         curr_solution_results.append(curr_solution_result)
                         curr_students_results.append(curr_students_result)
@@ -270,6 +318,7 @@ class TestPA1(TestJupyterNotebook):
         tokenizer_type: str,
         stemming_type: str,
         tqdm_desc: str = None,
+        show_debug_msg: DebugMsgConfig = None,
     ) -> None:
         try:
             self.checker()
@@ -310,21 +359,25 @@ class TestPA1(TestJupyterNotebook):
                     # Check each subtoken list, sort the list by alphabetic order
 
                     # check if sentence is tokenized into desired amount of token
-                    self.assertEqual(
+                    self.assertion_wrapper(
+                        self.assertEqual,
                         curr_golden_token,
                         curr_student_token,
-                        "(main) Token mismatch.\n"
+                        debug_msg="(main) Token mismatch.\n"
                         + f"Expect token '{curr_golden_token}', but '{curr_student_token}' received!",
+                        show_debug_msg=show_debug_msg,
                     )
 
                     # check if sentence is tokenized into desired tokens
-                    self.assertEqual(
+                    self.assertion_wrapper(
+                        self.assertEqual,
                         sorted(curr_golden_subtokens),
                         sorted(curr_student_subtokens),
-                        "Output does not match.\n"
+                        debug_msg="Output does not match.\n"
                         + f'Current sentence: "{curr_sentence}"\n'
                         + f"Expect results: {curr_golden_subtokens}\n"
                         + f"but received: {curr_student_subtokens}",
+                        show_debug_msg=show_debug_msg,
                     )
 
                 solution_results.extend(golden_results)
@@ -341,6 +394,7 @@ class TestPA1(TestJupyterNotebook):
     def heaps_tester(
         self,
         prerequisite: tuple[str, str],
+        show_debug_msg: DebugMsgConfig = None,
     ) -> None:
         try:
             self.checker()
@@ -358,32 +412,38 @@ class TestPA1(TestJupyterNotebook):
                 prev_students_results,
             )
             # check if sentence is tokenized into desired amount of token
-            self.assertEqual(
+            self.assertion_wrapper(
+                self.assertEqual,
                 len(golden_results),
                 len(heaps_results),
-                "Output length does not match.\n"
+                debug_msg="Output length does not match.\n"
                 + f"Expect '{len(golden_results)}' entries but '{len(heaps_results)}' received!\n"
                 + f"Expect results: {golden_results}\n"
                 + f"but received: {heaps_results}",
+                show_debug_msg=show_debug_msg,
             )
 
             if golden_results[-1] != heaps_results[-1]:
                 golden_token_count, golden_unique_token_count = golden_results[-1]
                 student_token_count, student_unique_token_count = heaps_results[-1]
                 # check if total token count matches
-                self.assertEqual(
+                self.assertion_wrapper(
+                    self.assertEqual,
                     golden_token_count,
                     student_token_count,
-                    "Token count does not match.\n"
+                    debug_msg="Token count does not match.\n"
                     + f"Expect '{golden_token_count}' tokens but '{student_token_count}' received!\n",
+                    show_debug_msg=show_debug_msg,
                 )
 
                 # check if unique token count matches
-                self.assertEqual(
+                self.assertion_wrapper(
+                    self.assertEqual,
                     golden_unique_token_count,
                     student_unique_token_count,
-                    "Unique token count does not match.\n"
+                    debug_msg="Unique token count does not match.\n"
                     + f"Expect '{golden_unique_token_count}' unique tokens but '{student_unique_token_count}' received!\n",
+                    show_debug_msg=show_debug_msg,
                 )
 
         except AssertionError:
@@ -394,6 +454,7 @@ class TestPA1(TestJupyterNotebook):
     def zipf_tester(
         self,
         prerequisite: tuple[str, str],
+        show_debug_msg: DebugMsgConfig = None,
     ) -> None:
         try:
             self.checker()
@@ -419,19 +480,23 @@ class TestPA1(TestJupyterNotebook):
             )
 
             # check if total token count matches
-            self.assertEqual(
+            self.assertion_wrapper(
+                self.assertEqual,
                 golden_token_count,
                 student_token_count,
-                "Token count does not match.\n"
+                debug_msg="Token count does not match.\n"
                 + f"Expect '{golden_token_count}' tokens but '{student_token_count}' received!\n",
+                show_debug_msg=show_debug_msg,
             )
 
             # check if unique token count matches
-            self.assertEqual(
+            self.assertion_wrapper(
+                self.assertEqual,
                 golden_unique_token_count,
                 student_unique_token_count,
-                "Unique token count does not match.\n"
+                debug_msg="Unique token count does not match.\n"
                 + f"Expect '{golden_unique_token_count}' unique tokens but '{student_unique_token_count}' received!\n",
+                show_debug_msg=show_debug_msg,
             )
 
             golden_top_100_freq_tokens.sort(key=lambda x: (x[1], x[0]))
@@ -442,13 +507,15 @@ class TestPA1(TestJupyterNotebook):
                 student_top_100_freq_tokens,
             ):
                 # check if heaps number matches
-                self.assertEqual(
+                self.assertion_wrapper(
+                    self.assertEqual,
                     list(curr_golden),
                     list(curr_student),
-                    "Top 100 frequent tokens do not match.\n"
+                    debug_msg="Top 100 frequent tokens do not match.\n"
                     + f"Expect {list(curr_golden)} but {list(curr_student)} received!\n"
                     + f"Expect results: {golden_top_100_freq_tokens}\n"
                     + f"but received: {student_top_100_freq_tokens}",
+                    show_debug_msg=show_debug_msg,
                 )
         except AssertionError:
             raise

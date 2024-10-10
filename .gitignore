@@ -170,3 +170,5 @@ data/
 *.ipynb
 
 autograder.zip
+
+results/

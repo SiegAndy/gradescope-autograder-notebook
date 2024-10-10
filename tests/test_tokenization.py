@@ -1,6 +1,11 @@
 import unittest
 
-from gradescope_utils.autograder_utils.decorators import number, visibility, weight
+from gradescope_utils.autograder_utils.decorators import (
+    hide_errors,
+    number,
+    visibility,
+    weight,
+)
 
 from tests import (
     stemming_porter,
@@ -10,7 +15,7 @@ from tests import (
     tokenize_fancy,
     tokenize_space,
 )
-from tests.pa1 import TestPA1
+from tests.pa1 import DebugMsgConfig, TestPA1
 
 
 class TestTokenization(TestPA1):
@@ -20,13 +25,15 @@ class TestTokenization(TestPA1):
     @classmethod
     def setUpClass(cls):
         super().setUpClass(
+            # data_file_path="P1-train.gz",
             data_file_path="webpage.gz",
             allowed_imports=["re"],
         )
         cls.sentences = cls.sentences[:500]
 
     @weight(5)
-    @visibility("after_due_date")
+    @visibility("visible")
+    @hide_errors("Test failed!")
     @number("2.1")
     def test_21_tokenize_space(self):
         """Checking tokenize_space()"""
@@ -35,6 +42,10 @@ class TestTokenization(TestPA1):
             solution_function=tokenize_space,
             tag_name="tokenized_space",
             tqdm_desc="test_tokenize_space",
+            show_debug_msg=DebugMsgConfig(
+                show_msg=False,
+                test_tag="""(2.1) Checking tokenize_space()""",
+            ),
         )
 
     @weight(10)
@@ -62,7 +73,8 @@ class TestTokenization(TestPA1):
         )
 
     @weight(5)
-    @visibility("after_due_date")
+    @visibility("visible")
+    @hide_errors("Test failed!")
     @number("2.4")
     def test_24_tokenize_space_fancy(self):
         """Checking tokenize_space(), tokenize_fancy()"""
@@ -73,6 +85,10 @@ class TestTokenization(TestPA1):
             tqdm_desc="test_tokenize_space_fancy",
             prerequisite=("tokenized_space_{store_type}", "tokenize_space"),
             input_is_list=True,
+            show_debug_msg=DebugMsgConfig(
+                show_msg=False,
+                test_tag="""(2.4) Checking tokenize_space(), tokenize_fancy()""",
+            ),
         )
 
     @weight(5)
@@ -90,7 +106,8 @@ class TestTokenization(TestPA1):
         )
 
     @weight(5)
-    @visibility("after_due_date")
+    @visibility("visible")
+    @hide_errors("Test failed!")
     @number("3.2")
     def test_32_tokenize_space_fancy_yesStopping(self):
         """Checking tokenize_space(), tokenize_fancy(), stopping()"""
@@ -105,6 +122,10 @@ class TestTokenization(TestPA1):
             ),
             stopwords=self.stopwords,
             input_is_list=True,
+            show_debug_msg=DebugMsgConfig(
+                show_msg=False,
+                test_tag="""(3.2) Checking tokenize_space(), tokenize_fancy(), stopping()""",
+            ),
         )
 
     @weight(5)
@@ -171,7 +192,8 @@ class TestTokenization(TestPA1):
         )
 
     @weight(5)
-    @visibility("after_due_date")
+    @visibility("visible")
+    @hide_errors("Test failed!")
     @number("4.5")
     def test_45_tokenize_space_fancy_yesStopping_and_stemming_porter(self):
         """Checking tokenize_space(), tokenize_fancy(), stopping(), stemming_porter()"""
@@ -185,6 +207,10 @@ class TestTokenization(TestPA1):
                 "tokenize_space, tokenize_fancy, stopping",
             ),
             input_is_list=True,
+            show_debug_msg=DebugMsgConfig(
+                show_msg=False,
+                test_tag="""(4.5) Checking tokenize_space(), tokenize_fancy(), stopping(), stemming_porter()""",
+            ),
         )
 
     @weight(10)
@@ -201,7 +227,8 @@ class TestTokenization(TestPA1):
         )
 
     @weight(10)
-    @visibility("after_due_date")
+    @visibility("visible")
+    @hide_errors("Test failed!")
     @number("5.2")
     def test_52_tokenization_fancy_yesStopping_and_stemming_porter(self):
         """Checking tokenization(tokenize_type="fancy", stopwords=stopwords, stemming_type="porter")"""
@@ -211,6 +238,10 @@ class TestTokenization(TestPA1):
             stopwords=self.stopwords,
             tokenizer_type="fancy",
             stemming_type="porter",
+            show_debug_msg=DebugMsgConfig(
+                show_msg=False,
+                test_tag="""(5.2) Checking tokenization(tokenize_type="fancy", stopwords=stopwords, stemming_type="porter")""",
+            ),
         )
 
     @weight(4)
@@ -226,7 +257,8 @@ class TestTokenization(TestPA1):
         )
 
     @weight(4)
-    @visibility("after_due_date")
+    @visibility("visible")
+    @hide_errors("Test failed!")
     @number("6.2")
     def test_61_heaps_tokenization_fancy_yesStopping_and_stemming_porter(self):
         """Checking heaps() using results from 5.2"""
@@ -234,7 +266,11 @@ class TestTokenization(TestPA1):
             prerequisite=(
                 "tokenization_fancy_yesStopping_and_stemming_porter_{store_type}",
                 'tokenization(tokenize_type="fancy", stopwords=stopwords, stemming_type="porter")',
-            )
+            ),
+            show_debug_msg=DebugMsgConfig(
+                show_msg=False,
+                test_tag="(6.2) Checking heaps() using results from 5.2",
+            ),
         )
 
     @weight(2.5)
@@ -250,7 +286,8 @@ class TestTokenization(TestPA1):
         )
 
     @weight(2.5)
-    @visibility("after_due_date")
+    @visibility("visible")
+    @hide_errors("Test failed!")
     @number("7.2")
     def test_72_statistics_tokenization_fancy_yesStopping_and_stemming_porter(self):
         """Checking statistics() using results from 5.2"""
@@ -258,5 +295,21 @@ class TestTokenization(TestPA1):
             prerequisite=(
                 "tokenization_fancy_yesStopping_and_stemming_porter_{store_type}",
                 'tokenization(tokenize_type="fancy", stopwords=stopwords, stemming_type="porter")',
-            )
+            ),
+            show_debug_msg=DebugMsgConfig(
+                show_msg=False,
+                test_tag="(7.2) Checking statistics() using results from 5.2",
+            ),
+        )
+
+    @weight(0)
+    @visibility("hidden")
+    @number("0.0")
+    def test_99_instructor_debug_msg(self):
+        """Debug Messages From Previous Failed Private Tests"""
+        self.assertFalse(
+            hasattr(self.__class__, "hidden_debug_msg"),
+            getattr(
+                self.__class__, "hidden_debug_msg", "No hidden debug message found!"
+            ),
         )
