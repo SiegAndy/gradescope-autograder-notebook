@@ -142,13 +142,21 @@ class TestPA1(TestJupyterNotebook):
     ) -> None:
         # show_debug_msg is none or show_debug_msg.show_msg is true: show the debug msg to student
         # elsewise, do not show
+        show_debug_msg = None  # suppress error managements
         if show_debug_msg is not None and not show_debug_msg.show_msg:
             try:
                 assertion_method(*assertion_params, debug_msg)
             except AssertionError as e:
                 prev_debug_msgs = getattr(self.__class__, "hidden_debug_msg", "")
                 curr_debug_msg = "\n".join(
-                    [prev_debug_msgs, "=" * 80, show_debug_msg.test_tag, "=" * 80, str(e), "=" * 80]
+                    [
+                        prev_debug_msgs,
+                        "=" * 80,
+                        show_debug_msg.test_tag,
+                        "=" * 80,
+                        str(e),
+                        "=" * 80,
+                    ]
                 )
                 setattr(self.__class__, "hidden_debug_msg", curr_debug_msg)
                 # print("=" * 50)
@@ -351,6 +359,17 @@ class TestPA1(TestJupyterNotebook):
                     tokenizer_type=tokenizer_type,
                     stemming_type=stemming_type,
                 )
+
+                self.assertion_wrapper(
+                        self.assertEqual,
+                        len(golden_results),
+                        len(tokenized_results),
+                        debug_msg="Output length does not match.\n"
+                        + f'Current sentence: "{curr_sentence}"\n'
+                        + f"Expect '{len(golden_results)}' tokens, "
+                        + f"but '{len(tokenized_results)}' received!\n",
+                        show_debug_msg=show_debug_msg,
+                    )
 
                 for (curr_golden_token, curr_golden_subtokens), (
                     curr_student_token,
