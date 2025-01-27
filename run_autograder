@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-# Set up autograder files
-
-cd /autograder/source
-
-export in_gradescope="true"
-
-python3 run_tests.py
