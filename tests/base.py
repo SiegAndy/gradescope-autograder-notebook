@@ -49,11 +49,11 @@ def pick_up_submission_notebook(submission_folder: str = SUBMISSION_BASE):
 
 
 class DebugMsgConfig(object):
-    show_msg: bool = True
+    show_msg_in_orig_test: bool = True
     test_tag: str = ""
 
-    def __init__(self, show_msg: bool = True, test_tag: str = ""):
-        self.show_msg = show_msg
+    def __init__(self, show_msg_in_orig_test: bool = True, test_tag: str = ""):
+        self.show_msg_in_orig_test = show_msg_in_orig_test
         self.test_tag = test_tag
 
 

@@ -1,4 +1,9 @@
-from gradescope_utils.autograder_utils.decorators import number, visibility, weight
+from gradescope_utils.autograder_utils.decorators import (
+    number,
+    visibility,
+    weight,
+    hide_errors,
+)
 
 from tests.PA1.solution import (
     reciprocal_rank,
@@ -12,6 +17,7 @@ from tests.PA1.solution import (
 )
 
 from tests.PA1.base import TestPA1
+from tests.base import DebugMsgConfig
 
 
 class TestNotebookCompilable(TestPA1):
@@ -27,15 +33,21 @@ class TestNotebookCompilable(TestPA1):
 
     @weight(0)
     @visibility("visible")
+    @hide_errors("Test failed!")
     @number("3.1")
     def test_31_parse_qrels_trecrun(self):
         """Checking parse_trecrun_results()"""
         self.trecrun_parsing_tester(
             tqdm_desc="test_parse_qrels_trecrun",
+            show_debug_msg=DebugMsgConfig(
+                show_msg_in_orig_test=False,
+                test_tag="(3.1) Checking parse_trecrun_results()",
+            ),
         )
 
     @weight(0)
     @visibility("visible")
+    @hide_errors("Test failed!")
     @number("4.1")
     def test_41_reciprocal_rank(self):
         """Checking reciprocal_rank()"""
@@ -44,10 +56,15 @@ class TestNotebookCompilable(TestPA1):
             test_trecrun_model_types=["bm25", "ql", "dpr"],
             metric_func=reciprocal_rank,
             tqdm_desc="test_reciprocal_rank",
+            show_debug_msg=DebugMsgConfig(
+                show_msg_in_orig_test=False,
+                test_tag="(4.1) Checking reciprocal_rank()",
+            ),
         )
 
     @weight(0)
     @visibility("visible")
+    @hide_errors("Test failed!")
     @number("4.2")
     def test_42_precision(self):
         """Checking precision() @ 23"""
@@ -56,11 +73,16 @@ class TestNotebookCompilable(TestPA1):
             test_trecrun_model_types=["bm25", "ql", "dpr"],
             metric_func=precision,
             top_k=23,
-            tqdm_desc="test_reciprocal_rank_at_23",
+            tqdm_desc="test_precision_at_23",
+            show_debug_msg=DebugMsgConfig(
+                show_msg_in_orig_test=False,
+                test_tag="(4.2) Checking precision() @ 23",
+            ),
         )
 
     @weight(0)
     @visibility("visible")
+    @hide_errors("Test failed!")
     @number("4.3")
     def test_43_recall(self):
         """Checking recall() @ 17"""
@@ -70,23 +92,33 @@ class TestNotebookCompilable(TestPA1):
             metric_func=recall,
             top_k=17,
             tqdm_desc="test_recall_at_17",
+            show_debug_msg=DebugMsgConfig(
+                show_msg_in_orig_test=False,
+                test_tag="(4.3) Checking recall() @ 17",
+            ),
         )
 
     @weight(0)
     @visibility("visible")
+    @hide_errors("Test failed!")
     @number("4.4")
     def test_44_f1(self):
-        """Checking f1()"""
+        """Checking f1() @ 29"""
         self.individual_evaluation_metric_tester(
             tag_name="f1_at_29",
             test_trecrun_model_types=["bm25", "ql", "dpr"],
             metric_func=f1,
             top_k=29,
             tqdm_desc="test_f1_at_29",
+            show_debug_msg=DebugMsgConfig(
+                show_msg_in_orig_test=False,
+                test_tag="(4.4) Checking f1() @ 29",
+            ),
         )
 
     @weight(0)
     @visibility("visible")
+    @hide_errors("Test failed!")
     @number("4.5")
     def test_45_average_precision(self):
         """Checking average_precision() @ 46"""
@@ -96,10 +128,15 @@ class TestNotebookCompilable(TestPA1):
             metric_func=average_precision,
             top_k=46,
             tqdm_desc="test_average_precision_at_46",
+            show_debug_msg=DebugMsgConfig(
+                show_msg_in_orig_test=False,
+                test_tag="(4.5) Checking average_precision() @ 46",
+            ),
         )
 
     @weight(0)
     @visibility("visible")
+    @hide_errors("Test failed!")
     @number("4.6")
     def test_46_binary_preference(self):
         """Checking binary_preference()"""
@@ -108,10 +145,15 @@ class TestNotebookCompilable(TestPA1):
             test_trecrun_model_types=["bm25", "ql", "dpr"],
             metric_func=binary_preference,
             tqdm_desc="test_binary_preference",
+            show_debug_msg=DebugMsgConfig(
+                show_msg_in_orig_test=False,
+                test_tag="(4.6) Checking binary_preference()",
+            ),
         )
 
     @weight(0)
     @visibility("visible")
+    @hide_errors("Test failed!")
     @number("4.7")
     def test_47_precision_at_recall_precentile(self):
         """Checking precision_at_recall_precentile() @ 19% Recall"""
@@ -121,10 +163,15 @@ class TestNotebookCompilable(TestPA1):
             metric_func=precision_at_recall_precentile,
             recall_precentile=19,
             tqdm_desc="test_precision_at_recall_precentile_at_19",
+            show_debug_msg=DebugMsgConfig(
+                show_msg_in_orig_test=False,
+                test_tag="(4.7) Checking precision_at_recall_precentile() @ 19% Recall",
+            ),
         )
 
     @weight(0)
     @visibility("visible")
+    @hide_errors("Test failed!")
     @number("4.8")
     def test_48_precision_at_recall(self):
         """Checking precision_at_recall()"""
@@ -133,10 +180,15 @@ class TestNotebookCompilable(TestPA1):
             test_trecrun_model_types=["bm25", "ql", "dpr"],
             metric_func=precision_at_recall,
             tqdm_desc="test_precision_at_recall",
+            show_debug_msg=DebugMsgConfig(
+                show_msg_in_orig_test=False,
+                test_tag="(4.8) Checking precision_at_recall()",
+            ),
         )
 
     @weight(0)
     @visibility("visible")
+    @hide_errors("Test failed!")
     @number("5.1")
     def test_51_evaluation(self):
         """Checking evaluation()"""
@@ -164,17 +216,38 @@ class TestNotebookCompilable(TestPA1):
                 "precision_at_recall",
             ],
             tqdm_desc="test_evaluation",
+            show_debug_msg=DebugMsgConfig(
+                show_msg_in_orig_test=False,
+                test_tag="(5.1) Checking evaluation()",
+            ),
         )
 
     @weight(0)
     @visibility("visible")
+    @hide_errors("Test failed!")
     @number("5.2")
     def test_52_average_precision_comparison(self):
-        """Checking evaluation()"""
+        """Checking comparison_average_precision_improvement()"""
         self.ap_comparison_func_tester(
             top_k=20,
             prerequisite_test_tags=[
                 "evaluation",
             ],
             tqdm_desc="test_average_precision_comparison",
+            show_debug_msg=DebugMsgConfig(
+                show_msg_in_orig_test=False,
+                test_tag="(5.2) Checking comparison_average_precision_improvement()",
+            ),
+        )
+
+    @weight(0)
+    @visibility("hidden")
+    @number("0.0")
+    def test_99_instructor_debug_msg(self):
+        """Debug Messages From Previous Failed Private Tests"""
+        self.assertFalse(
+            hasattr(self.__class__, "hidden_debug_msg"),
+            getattr(
+                self.__class__, "hidden_debug_msg", "No hidden debug message found!"
+            ),
         )

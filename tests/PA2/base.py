@@ -146,7 +146,7 @@ class TestPA2(TestJupyterNotebook):
         # show_debug_msg is none or show_debug_msg.show_msg is true: show the debug msg to student
         # elsewise, do not show
         show_debug_msg = None  # suppress error managements
-        if show_debug_msg is not None and not show_debug_msg.show_msg:
+        if show_debug_msg is not None and not show_debug_msg.show_msg_in_orig_test:
             try:
                 assertion_method(*assertion_params, debug_msg)
             except AssertionError as e:

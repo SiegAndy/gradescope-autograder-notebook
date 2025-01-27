@@ -93,6 +93,7 @@ class TestPA1(TestJupyterNotebook):
         self,
         prerequisite_test_tags: list[str] = None,
         prerequisite_func_names: list[str] = None,
+        show_debug_msg: DebugMsgConfig = None,
     ) -> tuple[Any, Any]:
         """
         Check whether expected class variable is stored and is not None.
@@ -112,17 +113,21 @@ class TestPA1(TestJupyterNotebook):
                 for store_type in ["solution", "student"]:
                     curr_attr_name = f"{test_tag}_{store_type}"
                     # check if class has the attribute
-                    self.assertTrue(
+                    self.assertion_wrapper(
+                        self.assertTrue,
                         hasattr(self.__class__, curr_attr_name),
-                        error_msg,
+                        debug_msg=error_msg,
+                        show_debug_msg=show_debug_msg,
                     )
 
                     curr_attr = getattr(self.__class__, curr_attr_name)
 
                     # check if the attribute is None
-                    self.assertIsNotNone(
+                    self.assertion_wrapper(
+                        self.assertIsNotNone,
                         curr_attr,
-                        error_msg,
+                        debug_msg=error_msg,
+                        show_debug_msg=show_debug_msg,
                     )
 
                     result_attrs[test_tag][store_type] = curr_attr
@@ -148,8 +153,8 @@ class TestPA1(TestJupyterNotebook):
     ) -> None:
         # show_debug_msg is none or show_debug_msg.show_msg is true: show the debug msg to student
         # elsewise, do not show
-        show_debug_msg = None  # suppress error managements
-        if show_debug_msg is not None and not show_debug_msg.show_msg:
+        # show_debug_msg = None  # suppress error managements
+        if show_debug_msg is not None and not show_debug_msg.show_msg_in_orig_test:
             try:
                 assertion_method(*assertion_params, debug_msg)
             except AssertionError as e:
@@ -277,6 +282,7 @@ class TestPA1(TestJupyterNotebook):
                     "parse_query_relevance_mapping",
                     "parse_trecrun_results",
                 ],
+                show_debug_msg=show_debug_msg,
             )
 
             solution_ranklists_results = stored_ranklists_results["parse_files"][
@@ -356,8 +362,8 @@ class TestPA1(TestJupyterNotebook):
                     len(query_ids_mismatched_results),
                     0,
                     debug_msg=f"\nIncorrect {metric_printout_name} ('{curr_test_model_name}') results for queries: [{', '.join(query_ids_mismatched_results)}]\n"
-                    + f"Expected values: [{', '.join([solution_results[query_id] for query_id in query_ids_mismatched_results])}], "
-                    + f"but received: [{', '.join([student_results[query_id] for query_id in query_ids_mismatched_results])}]!\n",
+                    + f"Expected values: [{', '.join([str(solution_results[query_id]) for query_id in query_ids_mismatched_results])}],\n"
+                    + f"but received: [{', '.join([str(student_results[query_id]) for query_id in query_ids_mismatched_results])}]!\n",
                     show_debug_msg=show_debug_msg,
                 )
                 all_model_solution_results[curr_test_model_name] = solution_results
@@ -394,6 +400,7 @@ class TestPA1(TestJupyterNotebook):
             self.prerequisite_check(
                 prerequisite_test_tags=prerequisite_test_tags,
                 prerequisite_func_names=required_func_names,
+                show_debug_msg=show_debug_msg,
             )
 
             # get target function reflection
@@ -479,7 +486,8 @@ class TestPA1(TestJupyterNotebook):
                         curr_metric_name,
                         solution_evaluation_results_dict,
                         debug_msg=f"\nUnknown Output Metric: '{curr_metric_name}'!\n"
-                        + f"Expected output metrics are: [{', '.join(list(solution_evaluation_results_dict.keys()))}], but '{curr_metric_name}' received.",
+                        + f"Expected output metrics are: [{', '.join(list(solution_evaluation_results_dict.keys()))}],\n"
+                        + f"but '{curr_metric_name}' received.",
                         show_debug_msg=show_debug_msg,
                     )
 
@@ -488,7 +496,8 @@ class TestPA1(TestJupyterNotebook):
                         curr_query_id,
                         solution_evaluation_results_dict[curr_metric_name],
                         debug_msg=f"\nUnknown Output Query ID: '{curr_query_id}'!\n"
-                        + f"Expected output query ids are: [{', '.join(list(solution_evaluation_results_dict[curr_metric_name].keys()))}], but '{curr_query_id}' received.",
+                        + f"Expected output query ids are: [{', '.join(list(solution_evaluation_results_dict[curr_metric_name].keys()))}],\n"
+                        + f"but '{curr_query_id}' received.",
                         show_debug_msg=show_debug_msg,
                     )
 
@@ -498,8 +507,8 @@ class TestPA1(TestJupyterNotebook):
                         solution_evaluation_results_dict[curr_metric_name][
                             curr_query_id
                         ],
-                        debug_msg=f"\nIncorrect Value for Metric: '{curr_metric_name}', Query ID: '{curr_query_id}', Value: {curr_metric_value}!\n"
-                        + f"Expected output is: '{solution_evaluation_results_dict[curr_metric_name][curr_query_id]}', but '{curr_metric_value}' received.",
+                        debug_msg=f"\nIncorrect Value for Metric: '{curr_metric_name}', Query ID: '{curr_query_id}', Value: '{curr_metric_value}'!\n"
+                        + f"Expected output is: '{str(solution_evaluation_results_dict[curr_metric_name][curr_query_id])}', but '{curr_metric_value}' received.",
                         show_debug_msg=show_debug_msg,
                     )
                     student_evaluation_results_dict[curr_metric_name][
@@ -539,6 +548,7 @@ class TestPA1(TestJupyterNotebook):
             self.prerequisite_check(
                 prerequisite_test_tags=prerequisite_test_tags,
                 prerequisite_func_names=["average_precision", "evaluation"],
+                show_debug_msg=show_debug_msg,
             )
 
             # get target function reflection
@@ -600,7 +610,7 @@ class TestPA1(TestJupyterNotebook):
                     curr_results,
                     solution_comparison_results_dict[curr_query_id],
                     debug_msg=f"\nIncorrect Results for Query ID: '{curr_query_id}'!\n"
-                    + f"Expected output is: [{', '.join([str(elem) for elem in solution_comparison_results_dict[curr_query_id]])}]"
+                    + f"Expected output is: [{', '.join([str(elem) for elem in solution_comparison_results_dict[curr_query_id]])}]\n"
                     + f"but received [{', '.join([str(elem) for elem in curr_results])}].",
                     show_debug_msg=show_debug_msg,
                 )
