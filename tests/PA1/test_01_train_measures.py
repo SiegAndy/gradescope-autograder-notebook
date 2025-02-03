@@ -45,12 +45,13 @@ class TestNotebookCompilable(TestPA1):
     @visibility("visible")
     @number("1.1")
     def test_11_sample_reciprocal_rank(self):
-        """Checking reciprocal_rank()"""
+        """Checking reciprocal_rank() @ 10"""
         self.individual_evaluation_metric_tester(
-            tag_name="sample_reciprocal_rank",
+            tag_name="sample_reciprocal_rank_at_10",
             test_trecrun_model_types=["bm25", "ql", "dpr"],
             metric_func=reciprocal_rank,
-            tqdm_desc="test_sample_reciprocal_rank",
+            top_k=10,
+            tqdm_desc="test_sample_reciprocal_rank_at_10",
         )
 
     @weight(0)
@@ -151,7 +152,7 @@ class TestNotebookCompilable(TestPA1):
             tag_name="sample_evaluation",
             test_trecrun_model_types=["bm25", "ql", "dpr"],
             evaluation_params_dict={
-                reciprocal_rank: [],
+                reciprocal_rank: [10],
                 precision: [10],
                 recall: [10],
                 f1: [10],
@@ -161,7 +162,7 @@ class TestNotebookCompilable(TestPA1):
                 precision_at_recall: [],
             },
             prerequisite_test_tags=[
-                "sample_reciprocal_rank",
+                "sample_reciprocal_rank_at_10",
                 "sample_precision_at_10",
                 "sample_recall_at_10",
                 "sample_f1_at_10",

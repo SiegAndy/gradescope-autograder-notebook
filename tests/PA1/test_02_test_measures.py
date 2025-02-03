@@ -51,15 +51,16 @@ class TestNotebookCompilable(TestPA1):
     @hide_errors("Test failed!")
     @number("4.1")
     def test_4_01_reciprocal_rank(self):
-        """Checking reciprocal_rank()"""
+        """Checking reciprocal_rank() @ 50"""
         self.individual_evaluation_metric_tester(
-            tag_name="reciprocal_rank",
+            tag_name="reciprocal_rank_at_50",
             test_trecrun_model_types=["bm25", "ql", "dpr"],
             metric_func=reciprocal_rank,
-            tqdm_desc="test_reciprocal_rank",
+            tqdm_desc="test_reciprocal_rank_at_50",
+            top_k=50,
             show_debug_msg=DebugMsgConfig(
                 show_msg_in_orig_test=False,
-                test_tag="(4.1) Checking reciprocal_rank()",
+                test_tag="(4.1) Checking reciprocal_rank() @ 50",
             ),
         )
 
@@ -305,7 +306,7 @@ class TestNotebookCompilable(TestPA1):
             tag_name="evaluation",
             test_trecrun_model_types=["bm25", "ql", "dpr"],
             evaluation_params_dict={
-                reciprocal_rank: [],
+                reciprocal_rank: [40],
                 precision: [55],
                 recall: [60],
                 f1: [65],
@@ -316,7 +317,7 @@ class TestNotebookCompilable(TestPA1):
                 # precision_at_recall: [],
             },
             prerequisite_test_tags=[
-                "reciprocal_rank",
+                "reciprocal_rank_at_50",
                 "precision_at_23",
                 "precision_at_50",
                 "recall_at_17",
