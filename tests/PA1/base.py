@@ -27,8 +27,9 @@ def function_name_to_metric_name(
 
     if isinstance(func, Callable):
         func_name = func.__name__
+
     if func_name == "reciprocal_rank":
-        return "RR"
+        return f"RR@{func_params[0]}"
     elif func_name == "precision":
         return f"P@{func_params[0]}"
     elif func_name == "recall":
@@ -37,6 +38,8 @@ def function_name_to_metric_name(
         return f"F1@{func_params[0]}"
     elif func_name == "average_precision":
         return f"AP@{func_params[0]}"
+    elif func_name == "ndcg":
+        return f"nDCG@{func_params[0]}"
     elif func_name == "binary_preference":
         return "BPREF"
     elif func_name == "precision_at_recall_precentile":

@@ -213,16 +213,16 @@ class TestNotebookCompilable(TestPA1):
     @hide_errors("Test failed!")
     @number("4.10")
     def test_4_10_ndcg(self):
-        """Checking ndcg() @ 10"""
+        """Checking ndcg() @ 22"""
         self.individual_evaluation_metric_tester(
-            tag_name="ndcg_at_10",
+            tag_name="ndcg_at_22",
             test_trecrun_model_types=["bm25", "ql", "dpr"],
             metric_func=ndcg,
-            top_k=10,
-            tqdm_desc="test_ndcg_at_10",
+            top_k=22,
+            tqdm_desc="test_ndcg_at_22",
             show_debug_msg=DebugMsgConfig(
                 show_msg_in_orig_test=False,
-                test_tag="(4.10) Checking ndcg() @ 10",
+                test_tag="(4.10) Checking ndcg() @ 22",
             ),
         )
 
@@ -266,16 +266,16 @@ class TestNotebookCompilable(TestPA1):
     @hide_errors("Test failed!")
     @number("4.13")
     def test_4_13_precision_at_recall_precentile(self):
-        """Checking precision_at_recall_precentile() @ 19% Recall"""
+        """Checking precision_at_recall_precentile() @ 13% Recall"""
         self.individual_evaluation_metric_tester(
-            tag_name="precision_at_recall_precentile_at_19",
+            tag_name="precision_at_recall_precentile_at_13",
             test_trecrun_model_types=["bm25", "ql", "dpr"],
             metric_func=precision_at_recall_precentile,
-            recall_precentile=19,
-            tqdm_desc="test_precision_at_recall_precentile_at_19",
+            recall_precentile=13,
+            tqdm_desc="test_precision_at_recall_precentile_at_13",
             show_debug_msg=DebugMsgConfig(
                 show_msg_in_orig_test=False,
-                test_tag="(4.13) Checking precision_at_recall_precentile() @ 19% Recall",
+                test_tag="(4.13) Checking precision_at_recall_precentile() @ 13% Recall",
             ),
         )
 
@@ -326,7 +326,7 @@ class TestNotebookCompilable(TestPA1):
                 "f1_at_1000",
                 "average_precision_at_46",
                 "average_precision_at_25",
-                "ndcg_at_25",
+                "ndcg_at_22",
                 "ndcg_at_500",
                 "binary_preference",
                 # "precision_at_recall_precentile_at_19",
