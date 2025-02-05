@@ -13,7 +13,7 @@ from tests.PA1.solution import (
     f1,
     average_precision,
     binary_preference,
-    precision_at_recall_precentile,
+    precision_at_recall_percentile,
     precision_at_recall,
 )
 
@@ -265,17 +265,17 @@ class TestNotebookCompilable(TestPA1):
     @visibility("visible")
     @hide_errors("Test failed!")
     @number("4.13")
-    def test_4_13_precision_at_recall_precentile(self):
-        """Checking precision_at_recall_precentile() @ 13% Recall"""
+    def test_4_13_precision_at_recall_percentile(self):
+        """Checking precision_at_recall_percentile() @ 13% Recall"""
         self.individual_evaluation_metric_tester(
-            tag_name="precision_at_recall_precentile_at_13",
+            tag_name="precision_at_recall_percentile_at_13",
             test_trecrun_model_types=["bm25", "ql", "dpr"],
-            metric_func=precision_at_recall_precentile,
-            recall_precentile=13,
-            tqdm_desc="test_precision_at_recall_precentile_at_13",
+            metric_func=precision_at_recall_percentile,
+            recall_percentile=13,
+            tqdm_desc="test_precision_at_recall_percentile_at_13",
             show_debug_msg=DebugMsgConfig(
                 show_msg_in_orig_test=False,
-                test_tag="(4.13) Checking precision_at_recall_precentile() @ 13% Recall",
+                test_tag="(4.13) Checking precision_at_recall_percentile() @ 13% Recall",
             ),
         )
 
@@ -313,7 +313,7 @@ class TestNotebookCompilable(TestPA1):
                 average_precision: [70],
                 ndcg: [10],
                 binary_preference: [],
-                # precision_at_recall_precentile: [25],
+                # precision_at_recall_percentile: [25],
                 # precision_at_recall: [],
             },
             prerequisite_test_tags=[
@@ -329,8 +329,8 @@ class TestNotebookCompilable(TestPA1):
                 "ndcg_at_22",
                 "ndcg_at_500",
                 "binary_preference",
-                # "precision_at_recall_precentile_at_19",
-                # "precision_at_recall_precentile_at_67",
+                # "precision_at_recall_percentile_at_19",
+                # "precision_at_recall_percentile_at_67",
                 # "precision_at_recall",
             ],
             tqdm_desc="test_evaluation",

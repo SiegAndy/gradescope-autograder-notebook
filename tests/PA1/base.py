@@ -42,7 +42,7 @@ def function_name_to_metric_name(
         return f"nDCG@{func_params[0]}"
     elif func_name == "binary_preference":
         return "BPREF"
-    elif func_name == "precision_at_recall_precentile":
+    elif func_name == "precision_at_recall_percentile":
         return f"P@{func_params[0]}%R"
     elif func_name == "precision_at_recall":
         return f"P@R"

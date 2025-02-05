@@ -8,7 +8,7 @@ from tests.PA1.solution import (
     f1,
     average_precision,
     binary_preference,
-    precision_at_recall_precentile,
+    precision_at_recall_percentile,
     precision_at_recall,
 )
 
@@ -135,14 +135,14 @@ class TestNotebookCompilable(TestPA1):
     @weight(0)
     @visibility("visible")
     @number("1.8")
-    def test_1_8_sample_precision_at_recall_precentile(self):
-        """Checking precision_at_recall_precentile() @ 5% Recall"""
+    def test_1_8_sample_precision_at_recall_percentile(self):
+        """Checking precision_at_recall_percentile() @ 5% Recall"""
         self.individual_evaluation_metric_tester(
-            tag_name="sample_precision_at_recall_precentile_at_5",
+            tag_name="sample_precision_at_recall_percentile_at_5",
             test_trecrun_model_types=["bm25", "ql", "dpr"],
-            metric_func=precision_at_recall_precentile,
-            recall_precentile=10,
-            tqdm_desc="test_sample_precision_at_recall_precentile_at_5",
+            metric_func=precision_at_recall_percentile,
+            recall_percentile=10,
+            tqdm_desc="test_sample_precision_at_recall_percentile_at_5",
         )
 
     @weight(0)
@@ -173,7 +173,7 @@ class TestNotebookCompilable(TestPA1):
                 average_precision: [10],
                 ndcg: [10],
                 binary_preference: [],
-                precision_at_recall_precentile: [5],
+                precision_at_recall_percentile: [5],
                 precision_at_recall: [],
             },
             prerequisite_test_tags=[
@@ -184,7 +184,7 @@ class TestNotebookCompilable(TestPA1):
                 "sample_average_precision_at_10",
                 "sample_ndcg_at_10",
                 "sample_binary_preference",
-                # "sample_precision_at_recall_precentile_at_5",
+                # "sample_precision_at_recall_percentile_at_5",
                 # "sample_precision_at_recall",
             ],
             tqdm_desc="test_sample_evaluation",
