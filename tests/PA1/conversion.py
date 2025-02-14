@@ -159,12 +159,12 @@ def improve_run(df, qrel_mapping, improvement_factor=0.8, random_state=42):
 def main():
 
     output_dir = "new"
-    input_dir = "old"
+    input_dir = "backup"
     # For example:
     file_list = [
-        "msmarcofull-bm25.trecrun",
-        "msmarcofull-dpr.trecrun",
-        "msmarcofull-ql.trecrun",
+        "msmarcosmall-bm25.trecrun",
+        "msmarcosmall-dpr.trecrun",
+        "msmarcosmall-ql.trecrun",
     ]
     qrel_path = "msmarco.qrels"
 
@@ -172,9 +172,9 @@ def main():
     qrel_mapping = parse_qrels(qrel_path)
 
     # 2) Read BM25, DPR, QL
-    df_bm25 = read_run(os.path.join(input_dir, file_list[0]))
-    df_dpr = read_run(os.path.join(input_dir, file_list[1]))
-    df_ql = read_run(os.path.join(input_dir, file_list[2]))
+    df_bm25 = read_run(os.path.join("../", input_dir, file_list[0]))
+    df_dpr = read_run(os.path.join("../", input_dir, file_list[1]))
+    df_ql = read_run(os.path.join("../", input_dir, file_list[2]))
 
     # 3) Perform top-k swap in BM25 for one query
     target_query = "23849"  # <-- for example

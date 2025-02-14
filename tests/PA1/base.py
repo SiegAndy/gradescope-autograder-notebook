@@ -12,7 +12,6 @@ from tests.base import (
 from tests.PA1.solution import (
     Ranklist,
     autograder_version,
-    comparison_average_precision_improvement,
     evaluation,
     parse_query_relevance_mapping,
     parse_trecrun_results,
@@ -42,9 +41,9 @@ def function_name_to_metric_name(
         return f"nDCG@{func_params[0]}"
     elif func_name == "binary_preference":
         return "BPREF"
-    elif func_name == "precision_at_recall_percentile":
+    elif func_name == "interpolated_precision":
         return f"P@{func_params[0]}%R"
-    elif func_name == "precision_at_recall":
+    elif func_name == "r_precision":
         return f"P@R"
     else:
         raise ValueError(f"Unexpected function input: {func.__name__}")
@@ -277,6 +276,7 @@ class TestPA1(TestJupyterNotebook):
         show_debug_msg: DebugMsgConfig = None,
         **metric_kwargs,
     ):
+        metric_allowance_threshold = 1.5e-4
         try:
             self.checker()
             stored_ranklists_results = self.prerequisite_check(
@@ -350,7 +350,10 @@ class TestPA1(TestJupyterNotebook):
                 # print(student_results)
                 query_ids_mismatched_results = []
                 for query_id in solution_ranklists_results[curr_test_model_name].keys():
-                    if student_results[query_id] != solution_results[query_id]:
+                    if (
+                        abs(solution_results[query_id] - student_results[query_id])
+                        > metric_allowance_threshold
+                    ):
                         query_ids_mismatched_results.append(query_id)
 
                 query_ids_mismatched_results = sorted(
@@ -393,6 +396,7 @@ class TestPA1(TestJupyterNotebook):
         show_debug_msg: DebugMsgConfig = None,
     ):
         try:
+            metric_allowance_threshold = 1.5e-4
             self.checker()
 
             required_func_names = [
@@ -504,16 +508,26 @@ class TestPA1(TestJupyterNotebook):
                         show_debug_msg=show_debug_msg,
                     )
 
-                    self.assertion_wrapper(
-                        self.assertEqual,
-                        curr_metric_value,
-                        solution_evaluation_results_dict[curr_metric_name][
-                            curr_query_id
-                        ],
-                        debug_msg=f"\nIncorrect Value for Metric: '{curr_metric_name}', Query ID: '{curr_query_id}', Value: '{curr_metric_value}'!\n"
-                        + f"Expected output is: '{str(solution_evaluation_results_dict[curr_metric_name][curr_query_id])}', but '{curr_metric_value}' received.",
-                        show_debug_msg=show_debug_msg,
-                    )
+                    if (
+                        abs(
+                            solution_evaluation_results_dict[curr_metric_name][
+                                curr_query_id
+                            ]
+                            - curr_metric_value
+                        )
+                        > metric_allowance_threshold
+                    ):
+                        self.assertion_wrapper(
+                            self.assertEqual,
+                            curr_metric_value,
+                            solution_evaluation_results_dict[curr_metric_name][
+                                curr_query_id
+                            ],
+                            debug_msg=f"\nIncorrect Value for Metric: '{curr_metric_name}', Query ID: '{curr_query_id}', Value: '{curr_metric_value}'!\n"
+                            + f"Expected output is: '{str(solution_evaluation_results_dict[curr_metric_name][curr_query_id])}', but '{curr_metric_value}' received.",
+                            show_debug_msg=show_debug_msg,
+                        )
+
                     student_evaluation_results_dict[curr_metric_name][
                         curr_query_id
                     ] = curr_metric_value
@@ -528,104 +542,6 @@ class TestPA1(TestJupyterNotebook):
             self.save_class_attr(
                 tag_name=tag_name,
                 results_set=[all_model_solution_results, all_model_student_results],
-            )
-        except AssertionError:
-            raise
-        except Exception as e:
-            self.assertTrue(False, f"Code does not compile:\n{e}")
-
-    def ap_comparison_func_tester(
-        self,
-        top_k: int,
-        prerequisite_test_tags: list[
-            str
-        ],  # a list of evaluation func tester tags, where each corresponding tests involves AP evaluation
-        tqdm_desc: str = None,
-        show_debug_msg: DebugMsgConfig = None,
-    ):
-        try:
-            tag_name = "average_precision_comparison_checker"
-            self.checker()
-
-            # make sure all previous individual metric tests are passed
-            self.prerequisite_check(
-                prerequisite_test_tags=prerequisite_test_tags,
-                prerequisite_func_names=["average_precision", "evaluation"],
-                show_debug_msg=show_debug_msg,
-            )
-
-            # get target function reflection
-            student_comparison_func = self.client.ref(
-                "comparison_average_precision_improvement"
-            )
-
-            # cleanup the notebook output as ipython core will give out warning
-            # when output has 200? more line and corrupts reflection of the function output
-            self.clear_notebook_output(50)
-
-            # check the output of notebook
-            student_evaluation_results = self.method_wrapper(
-                student_comparison_func,
-                bm25_trecrun_filepath=str(self.trecrun_filepaths["bm25"]),
-                ql_trecrun_filepath=str(self.trecrun_filepaths["ql"]),
-                dpr_trecrun_filepath=str(self.trecrun_filepaths["dpr"]),
-                qrels_filepath=str(self.qrels_filepath),
-                top_k=top_k,
-            )
-
-            solution_results = comparison_average_precision_improvement(
-                bm25_trecrun_filepath=str(self.trecrun_filepaths["bm25"]),
-                ql_trecrun_filepath=str(self.trecrun_filepaths["ql"]),
-                dpr_trecrun_filepath=str(self.trecrun_filepaths["dpr"]),
-                qrels_filepath=str(self.qrels_filepath),
-                top_k=top_k,
-            )
-
-            solution_comparison_results_dict = dict()
-            for curr_entry in solution_results:
-                curr_query_id, *curr_results = curr_entry
-                solution_comparison_results_dict[curr_query_id] = curr_results
-
-            student_evaluation_results_dict = dict()
-            for curr_entry in tqdm(student_evaluation_results, desc=tqdm_desc):
-                self.assertion_wrapper(
-                    self.assertEqual,
-                    len(curr_entry),
-                    6,
-                    debug_msg=f"\nIncorrect Output Format!\n"
-                    + f"Expected format for each evalution entry is: (Query ID, BM25 AP@k, QL AP@k, QL Improvement, DPR AP@k, DPR Improvement), but only '{len(curr_entry)}' elements received.",
-                    show_debug_msg=show_debug_msg,
-                )
-                curr_query_id, *curr_results = curr_entry
-
-                self.assertion_wrapper(
-                    self.assertIn,
-                    curr_query_id,
-                    solution_comparison_results_dict,
-                    debug_msg=f"\nUnknown Output Query ID: '{curr_query_id}'!\n"
-                    + f"Expected output query ids are: [{', '.join(list(solution_comparison_results_dict.keys()))}],\n"
-                    + f"but received '{curr_query_id}'.",
-                    show_debug_msg=show_debug_msg,
-                )
-
-                self.assertion_wrapper(
-                    self.assertEqual,
-                    curr_results,
-                    solution_comparison_results_dict[curr_query_id],
-                    debug_msg=f"\nIncorrect Results for Query ID: '{curr_query_id}'!\n"
-                    + f"Expected output is: [{', '.join([str(elem) for elem in solution_comparison_results_dict[curr_query_id]])}]\n"
-                    + f"but received [{', '.join([str(elem) for elem in curr_results])}].",
-                    show_debug_msg=show_debug_msg,
-                )
-
-                student_evaluation_results_dict[curr_query_id] = curr_results
-
-            self.save_class_attr(
-                tag_name=tag_name,
-                results_set=[
-                    solution_comparison_results_dict,
-                    student_evaluation_results_dict,
-                ],
             )
         except AssertionError:
             raise
