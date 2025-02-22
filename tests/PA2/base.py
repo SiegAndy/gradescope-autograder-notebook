@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Any, Callable, List
 
 from tests.base import (
@@ -8,10 +9,9 @@ from tests.base import (
 
 from tests.PA2.solution import (
     autograder_version,
-    heaps,
     load_file,
-    statistics,
-    tokenization,
+    freq_stats,
+    preprocessing,
 )
 
 
@@ -41,93 +41,104 @@ class TestPA2(TestJupyterNotebook):
         self,
         curr_sentence: str,
         golden_results: List[Any],
-        tokenized_results: List[Any],
+        processed_results: List[Any],
         overall_golden_results: List[Any] = None,
         overall_tokenized_results: List[Any] = None,
         show_debug_msg: DebugMsgConfig = None,
     ) -> None:
+
         expected_golden = golden_results
         if overall_golden_results is not None:
             expected_golden = overall_golden_results
-        received_tokenized = tokenized_results
+
+        received_tokenized = processed_results
         if overall_tokenized_results is not None:
             received_tokenized = overall_tokenized_results
+
         # check if sentence is tokenized into desired amount of token
         self.assertion_wrapper(
             self.assertEqual,
             len(golden_results),
-            len(tokenized_results),
+            len(processed_results),
             debug_msg="Output length does not match.\n"
-            + f'Current sentence: "{curr_sentence}"\n'
+            + f'Current Sentence: "{curr_sentence}"\n'
             + f"Expect '{len(golden_results)}' tokens, "
-            + f"but '{len(tokenized_results)}' received!\n"
-            + f"Expect results: {expected_golden}, \n"
-            + f"but received: {received_tokenized}",
+            + f"but '{len(processed_results)}' received!\n"
+            + f"Expected Outputs: '{expected_golden}'\n"
+            + f"Received Outputs: '{received_tokenized}'",
             show_debug_msg=show_debug_msg,
         )
 
         # check if sentence is tokenized into desired tokens
         self.assertion_wrapper(
             self.assertEqual,
-            sorted(golden_results),
-            sorted(tokenized_results),
+            golden_results,
+            processed_results,
             debug_msg="Output does not match.\n"
-            + f'Current sentence: "{curr_sentence}"\n'
-            + f"Expect results: {expected_golden}, \n"
-            + f"but received: {received_tokenized}",
+            + f'Current Sentence: "{curr_sentence}"\n'
+            + f"Expected Outputs: '{expected_golden}'\n"
+            + f"Received Outputs: '{received_tokenized}'",
             show_debug_msg=show_debug_msg,
         )
 
     def prerequisite_check(
         self,
-        prerequisite: tuple[str, str] = None,
+        prerequisite_fn_tags: list[str] = None,
+        prerequisite_fn_names: list[str] = None,
+        show_debug_msg: DebugMsgConfig = None,
     ) -> tuple[Any, Any]:
         """
         Check whether expected class variable is stored and has the same size as self.sentences.
 
         If not, it means the previous test is failed which fails all downstream tasks.
 
-        Example attr_name: "tokenize_fancy_{store_type}"
+        prerequisite_fn_tags are the test tags that we used to check whether previous tests are pass or fail.
+
+        prerequisite_fn_names are the function names that are testing on previous test.
+
+        Example prerequisite_fn_tags: ["sample_tokenize_fancy"]
+
+        Example prerequisite_fn_names: ["tokenize_fancy"]
         """
         try:
-            if prerequisite is None:
+            if len(prerequisite_fn_tags) == 0 or len(prerequisite_fn_names) == 0:
                 return
 
-            attr_name, func_name = prerequisite
+            error_msg = f"Need to first pass the test(s) for function(s): {', '.join([fn_name +'()' if not fn_name.endswith(')') else fn_name for fn_name in prerequisite_fn_names] )} !"
 
-            error_msg = f"Need to first pass the test for function(s): {func_name} !"
-
-            result_attrs = []
-            for store_type in ["solution", "student"]:
-                curr_attr_name = attr_name.format(store_type=store_type)
-                # check if class has the attribute
-                self.assertTrue(
-                    hasattr(self.__class__, curr_attr_name),
-                    error_msg,
-                )
-
-                curr_attr = getattr(self.__class__, curr_attr_name)
-
-                # check if the attribute is None
-                self.assertIsNotNone(
-                    curr_attr,
-                    error_msg,
-                )
-                if "tokenization" not in curr_attr_name:
-                    # only check whether the attribute has the same size as self.sentences
-                    # when the checker is called for tokenizer, stemmer or stopper function.
-                    self.assertEqual(
-                        len(self.sentences),
-                        len(curr_attr),
-                        error_msg + f"\t{curr_attr_name}",
+            result_attrs = defaultdict(dict)
+            for test_tag in prerequisite_fn_tags:
+                for store_type in ["solution", "student"]:
+                    curr_attr_name = f"{test_tag}_{store_type}"
+                    # check if class has the attribute
+                    self.assertion_wrapper(
+                        self.assertTrue,
+                        hasattr(self.__class__, curr_attr_name),
+                        debug_msg=error_msg,
+                        show_debug_msg=show_debug_msg,
                     )
 
-                result_attrs.append(curr_attr)
+                    curr_attr = getattr(self.__class__, curr_attr_name)
+
+                    # check if the attribute is None
+                    self.assertion_wrapper(
+                        self.assertIsNotNone,
+                        curr_attr,
+                        debug_msg=error_msg,
+                        show_debug_msg=show_debug_msg,
+                    )
+
+                    result_attrs[test_tag][store_type] = curr_attr
             return result_attrs
         except AssertionError:
             raise
         except Exception as e:
-            self.assertTrue(False, f"Code does not compile:\n{e}")
+            self.assertion_wrapper(
+                self.assertTrue,
+                False,
+                debug_msg=f"Code does not compile:\n{e}",
+                show_debug_msg=show_debug_msg,
+            )
 
     def save_class_attr(self, tag_name: str, results_set: tuple[Any, Any]) -> None:
         store_class_var = f"{tag_name}_{{store_type}}"
@@ -174,22 +185,26 @@ class TestPA2(TestJupyterNotebook):
 
     def no_prerequisite_tester(
         self,
-        function_name: str,
         solution_function: Callable,
         *function_args,
         tag_name: str = None,
         tqdm_desc: str = None,
+        set_score: Callable = None,
+        max_score: int = None,
         show_debug_msg: DebugMsgConfig = None,
         **function_kwargs,
     ) -> None:
         try:
             self.checker()
             solution_results, student_results = [], []
+            function_name = solution_function.__name__
 
             # get target function reflection
             submission_method = self.client.ref(function_name)
 
-            for idx, curr_sentence in tqdm(enumerate(self.sentences), desc=tqdm_desc):
+            for idx, curr_sentence in tqdm(
+                enumerate(self.sentences), total=len(self.sentences), desc=tqdm_desc
+            ):
                 # tokenize the sentence using solution code
                 golden_results = solution_function(
                     curr_sentence, *function_args, **function_kwargs
@@ -207,9 +222,11 @@ class TestPA2(TestJupyterNotebook):
                 self.assertion_set(
                     curr_sentence=curr_sentence,
                     golden_results=golden_results,
-                    tokenized_results=target_results,
+                    processed_results=target_results,
                     show_debug_msg=show_debug_msg,
                 )
+
+                set_score(round((idx + 1) * max_score / len(self.sentences), 2))
 
                 solution_results.append(golden_results)
                 student_results.append(target_results)
@@ -225,90 +242,99 @@ class TestPA2(TestJupyterNotebook):
 
     def prerequisite_tester(
         self,
-        function_name: str,
         solution_function: Callable,
         *function_args,
         tag_name: str = None,
         tqdm_desc: str = None,
-        prerequisite: tuple[str, str] = None,
-        input_is_list: bool = False,
+        prerequisite_fn_tags: list[str] = None,
+        prerequisite_fn_names: list[str] = None,
+        use_prev_results: bool = False,
+        set_score: Callable = None,
+        max_score: int = None,
         show_debug_msg: DebugMsgConfig = None,
         **function_kwargs,
     ) -> None:
         try:
             self.checker()
-            prev_solution_results, prev_students_results = self.prerequisite_check(
-                prerequisite=prerequisite
+            prev_results = self.prerequisite_check(
+                prerequisite_fn_tags=prerequisite_fn_tags,
+                prerequisite_fn_names=prerequisite_fn_names,
+                show_debug_msg=show_debug_msg,
             )
+
+            function_name = solution_function.__name__
             # get target function reflection
             student_method = self.client.ref(function_name)
             solution_results, student_results = [], []
 
-            for idx, (curr_sentence, solution_tokens, student_tokens) in tqdm(
-                enumerate(
-                    zip(
-                        self.sentences,
-                        prev_solution_results,
-                        prev_students_results,
-                    )
-                ),
+            if not use_prev_results and len(prev_results) != 0:
+                test_contents = self.sentences
+            elif use_prev_results and len(prev_results) == 1:
+                test_contents = zip(
+                    self.sentences,
+                    prev_results[prerequisite_fn_tags[0]]["solution"],
+                    prev_results[prerequisite_fn_tags[0]]["student"],
+                )
+            else:
+                if use_prev_results:
+                    error_msg_header = "Unexpected params for prerequisite_tester(), should only specified one prerequisite:"
+                else:
+                    error_msg_header = "Unexpected params for prerequisite_tester(), should use no_prerequisite_tester() as no prerequisite_tester is specified:"
+                self.assertion_wrapper(
+                    self.assertTrue,
+                    False,
+                    debug_msg=(
+                        error_msg_header
+                        + f"\tprerequisite_fn_tags: {prerequisite_fn_tags}"
+                        + f"\tprerequisite_fn_names: {prerequisite_fn_names}"
+                    ),
+                )
+
+            for idx, curr_test_content in tqdm(
+                enumerate(test_contents),
+                total=len(self.sentences),
                 desc=tqdm_desc,
             ):
-                if not input_is_list:
-                    # tokenize the sentence using solution code
-                    curr_solution_results = solution_function(
-                        solution_tokens, *function_args, **function_kwargs
+                # tokenizer always takes in one sentence at a time and return a list of tokens
+                # stopping and stemming takes in a list of tokens and output a list of tokens
+                # preprocessing takes in a list of sentence and output a list of list of tokens
+
+                if not use_prev_results and len(prev_results) != 0:
+                    # not using stored result, using sentence
+                    curr_sentence, prev_solution_result, prev_students_result = (
+                        curr_test_content,
+                        curr_test_content,
+                        curr_test_content,
                     )
-                    # cleanup the notebook output as ipython core will give out warning
-                    # when output has 200? more line and corrupts reflection of the function output
-                    self.clear_notebook_output(idx)
-
-                    # check the output of notebook
-                    curr_students_results = self.method_wrapper(
-                        student_method,
-                        student_tokens,
-                        *function_args,
-                        **function_kwargs,
+                elif use_prev_results and len(prev_results) == 1:
+                    # using stored result
+                    curr_sentence, prev_solution_result, prev_students_result = (
+                        curr_test_content
                     )
+                # tokenize the sentence using solution code
+                curr_solution_results = solution_function(
+                    prev_solution_result, *function_args, **function_kwargs
+                )
+                # cleanup the notebook output as ipython core will give out warning
+                # when output has 200? more line and corrupts reflection of the function output
+                self.clear_notebook_output(idx)
 
-                    self.assertion_set(
-                        curr_sentence=curr_sentence,
-                        golden_results=curr_solution_results,
-                        tokenized_results=curr_students_results,
-                        show_debug_msg=show_debug_msg,
-                    )
+                # check the output of notebook
+                curr_students_results = self.method_wrapper(
+                    student_method,
+                    prev_students_result,
+                    *function_args,
+                    **function_kwargs,
+                )
 
-                else:
-                    curr_solution_results = []
-                    curr_students_results = []
-                    for solution_token, student_token in zip(
-                        solution_tokens, student_tokens
-                    ):
-                        # tokenize the sentence using solution code
-                        curr_solution_result = solution_function(
-                            solution_token, *function_args, **function_kwargs
-                        )
+                self.assertion_set(
+                    curr_sentence=curr_sentence,
+                    golden_results=curr_solution_results,
+                    processed_results=curr_students_results,
+                    show_debug_msg=show_debug_msg,
+                )
 
-                        # cleanup the notebook output as ipython core will give out warning
-                        # when output has 200? more line and corrupts reflection of the function output
-                        self.clear_notebook_output(idx)
-
-                        # check the output of notebook
-                        curr_students_result = self.method_wrapper(
-                            student_method,
-                            student_token,
-                            *function_args,
-                            **function_kwargs,
-                        )
-
-                        self.assertion_set(
-                            curr_sentence=curr_sentence,
-                            golden_results=curr_solution_result,
-                            tokenized_results=curr_students_result,
-                            show_debug_msg=show_debug_msg,
-                        )
-                        curr_solution_results.append(curr_solution_result)
-                        curr_students_results.append(curr_students_result)
+                set_score(round((idx + 1) * max_score / len(self.sentences), 2))
 
                 solution_results.append(curr_solution_results)
                 student_results.append(curr_students_results)
@@ -322,31 +348,44 @@ class TestPA2(TestJupyterNotebook):
         except Exception as e:
             self.assertTrue(False, f"Code does not compile:\n{e}")
 
-    def tokenization_tester(
+    def preprocessing_tester(
         self,
-        tag_name: str,
         stopwords: list[str],
         tokenizer_type: str,
         stemming_type: str,
+        tag_name: str,
+        num_of_sample_per_batch: int = 2,
         tqdm_desc: str = None,
+        prerequisite_fn_tags: list[str] = None,
+        prerequisite_fn_names: list[str] = None,
+        set_score: Callable = None,
+        max_score: int = None,
         show_debug_msg: DebugMsgConfig = None,
     ) -> None:
         try:
             self.checker()
+
+            self.prerequisite_check(
+                prerequisite_fn_tags=prerequisite_fn_tags,
+                prerequisite_fn_names=prerequisite_fn_names,
+                show_debug_msg=show_debug_msg,
+            )
+
             # get target function reflection
-            tokenization_method = self.client.ref("tokenization")
+            preprocessing_method = self.client.ref("preprocessing")
 
             solution_results, student_results = [], []
 
-            for idx, curr_sentence in tqdm(
-                enumerate(self.sentences),
-                desc=tqdm_desc,
-            ):
+            batch_size = num_of_sample_per_batch
+            pbar = tqdm(total=len(self.sentences), desc=tqdm_desc)
+            for idx in range(0, len(self.sentences), batch_size):
+                curr_test_sentences = self.sentences[idx : idx + batch_size]
+
                 # tokenize the sentence using solution code
-                golden_results = tokenization(
-                    [curr_sentence],
-                    stopwords=stopwords,
+                golden_results = preprocessing(
+                    curr_test_sentences,
                     tokenizer_type=tokenizer_type,
+                    stopwords=stopwords,
                     stemming_type=stemming_type,
                 )
 
@@ -356,10 +395,10 @@ class TestPA2(TestJupyterNotebook):
 
                 # check the output of notebook
                 tokenized_results = self.method_wrapper(
-                    tokenization_method,
-                    [curr_sentence],
-                    stopwords=stopwords,
+                    preprocessing_method,
+                    curr_test_sentences,
                     tokenizer_type=tokenizer_type,
+                    stopwords=stopwords,
                     stemming_type=stemming_type,
                 )
 
@@ -367,41 +406,39 @@ class TestPA2(TestJupyterNotebook):
                     self.assertEqual,
                     len(golden_results),
                     len(tokenized_results),
-                    debug_msg="Output length does not match.\n"
-                    + f'Current sentence: "{curr_sentence}"\n'
-                    + f"Expect '{len(golden_results)}' tokens, "
-                    + f"but '{len(tokenized_results)}' received!\n",
+                    debug_msg="Output length does not match on the subset:\n\t"
+                    + "\n\t".join([f'"{sentence}"' for sentence in curr_test_sentences])
+                    + "\n"
+                    + f"Expect '{len(golden_results)}' lists of tokens, "
+                    + f"but only '{len(tokenized_results)}' received!\n",
                     show_debug_msg=show_debug_msg,
                 )
 
-                for (curr_golden_token, curr_golden_subtokens), (
-                    curr_student_token,
-                    curr_student_subtokens,
-                ) in zip(golden_results, tokenized_results):
-                    # Check each subtoken list, sort the list by alphabetic order
-
-                    # check if sentence is tokenized into desired amount of token
-                    self.assertion_wrapper(
-                        self.assertEqual,
-                        curr_golden_token,
-                        curr_student_token,
-                        debug_msg="(main) Token mismatch.\n"
-                        + f"Expect token '{curr_golden_token}', but '{curr_student_token}' received!",
-                        show_debug_msg=show_debug_msg,
-                    )
-
+                for curr_test_sentence, curr_golden_tokens, curr_student_tokens in zip(
+                    curr_test_sentences, golden_results, tokenized_results
+                ):
                     # check if sentence is tokenized into desired tokens
                     self.assertion_wrapper(
                         self.assertEqual,
-                        sorted(curr_golden_subtokens),
-                        sorted(curr_student_subtokens),
-                        debug_msg="Output does not match.\n"
-                        + f'Current sentence: "{curr_sentence}"\n'
-                        + f"Expect results: {curr_golden_subtokens}\n"
-                        + f"but received: {curr_student_subtokens}",
+                        curr_golden_tokens,
+                        curr_student_tokens,
+                        debug_msg="Token mismatch.\n"
+                        + f"Current Sentence: {curr_test_sentence}"
+                        + f"Expected Outputs: '{curr_golden_tokens}'\n"
+                        + f"Received Outputs: '{curr_student_tokens}'",
                         show_debug_msg=show_debug_msg,
                     )
+                set_score(
+                    round(
+                        min(idx + batch_size, len(self.sentences))
+                        * max_score
+                        / len(self.sentences),
+                        2,
+                    )
+                )
 
+                if hasattr(pbar, "update"):
+                    pbar.update(len(curr_test_sentences))
                 solution_results.extend(golden_results)
                 student_results.extend(tokenized_results)
 
@@ -413,132 +450,74 @@ class TestPA2(TestJupyterNotebook):
         except Exception as e:
             self.assertTrue(False, f"Code does not compile:\n{e}")
 
-    def heaps_tester(
-        self,
-        prerequisite: tuple[str, str],
-        show_debug_msg: DebugMsgConfig = None,
-    ) -> None:
-        try:
-            self.checker()
-
-            prev_solution_results, prev_students_results = self.prerequisite_check(
-                prerequisite=prerequisite,
-            )
-            # get target function reflection
-            heaps_method = self.client.ref("heaps")
-
-            # tokenize the sentence using solution code
-            golden_results = heaps(prev_solution_results)
-            heaps_results = self.method_wrapper(
-                heaps_method,
-                prev_students_results,
-            )
-            # check if sentence is tokenized into desired amount of token
-            self.assertion_wrapper(
-                self.assertEqual,
-                len(golden_results),
-                len(heaps_results),
-                debug_msg="Output length does not match.\n"
-                + f"Expect '{len(golden_results)}' entries but '{len(heaps_results)}' received!\n"
-                + f"Expect results: {golden_results}\n"
-                + f"but received: {heaps_results}",
-                show_debug_msg=show_debug_msg,
-            )
-
-            if golden_results[-1] != heaps_results[-1]:
-                golden_token_count, golden_unique_token_count = golden_results[-1]
-                student_token_count, student_unique_token_count = heaps_results[-1]
-                # check if total token count matches
-                self.assertion_wrapper(
-                    self.assertEqual,
-                    golden_token_count,
-                    student_token_count,
-                    debug_msg="Token count does not match.\n"
-                    + f"Expect '{golden_token_count}' tokens but '{student_token_count}' received!\n",
-                    show_debug_msg=show_debug_msg,
-                )
-
-                # check if unique token count matches
-                self.assertion_wrapper(
-                    self.assertEqual,
-                    golden_unique_token_count,
-                    student_unique_token_count,
-                    debug_msg="Unique token count does not match.\n"
-                    + f"Expect '{golden_unique_token_count}' unique tokens but '{student_unique_token_count}' received!\n",
-                    show_debug_msg=show_debug_msg,
-                )
-
-        except AssertionError:
-            raise
-        except Exception as e:
-            self.assertTrue(False, f"Code does not compile:\n{e}")
-
     def zipf_tester(
         self,
-        prerequisite: tuple[str, str],
+        tag_name: str,
+        prerequisite_fn_tags: list[str] = None,
+        prerequisite_fn_names: list[str] = None,
+        set_score: Callable = None,
+        max_score: int = None,
+        tqdm_desc: str = None,
         show_debug_msg: DebugMsgConfig = None,
     ) -> None:
         try:
             self.checker()
-            prev_solution_results, prev_students_results = self.prerequisite_check(
-                prerequisite=prerequisite,
+            prev_results = self.prerequisite_check(
+                prerequisite_fn_tags=prerequisite_fn_tags,
+                prerequisite_fn_names=prerequisite_fn_names,
+                show_debug_msg=show_debug_msg,
             )
             # get target function reflection
-            statistics_method = self.client.ref("statistics")
+            statistics_method = self.client.ref("freq_stats")
+            prev_solution_results = prev_results[prerequisite_fn_tags[0]]["solution"]
+            prev_student_results = prev_results[prerequisite_fn_tags[0]]["student"]
 
             # tokenize the sentence using solution code
-            (
-                golden_token_count,
-                golden_unique_token_count,
-                golden_top_100_freq_tokens,
-            ) = statistics(prev_solution_results)
-            (
-                student_token_count,
-                student_unique_token_count,
-                student_top_100_freq_tokens,
-            ) = self.method_wrapper(
+            golden_results = freq_stats(prev_solution_results)
+            student_results = self.method_wrapper(
                 statistics_method,
-                prev_students_results,
+                prev_student_results,
             )
 
             # check if total token count matches
             self.assertion_wrapper(
                 self.assertEqual,
-                golden_token_count,
-                student_token_count,
-                debug_msg="Token count does not match.\n"
-                + f"Expect '{golden_token_count}' tokens but '{student_token_count}' received!\n",
+                len(golden_results),
+                len(student_results),
+                debug_msg="The number of Unique Token does not match.\n"
+                + f"Expect '{len(golden_results)}' unique tokens but '{len(student_results)}' received!\n",
                 show_debug_msg=show_debug_msg,
             )
 
-            # check if unique token count matches
-            self.assertion_wrapper(
-                self.assertEqual,
-                golden_unique_token_count,
-                student_unique_token_count,
-                debug_msg="Unique token count does not match.\n"
-                + f"Expect '{golden_unique_token_count}' unique tokens but '{student_unique_token_count}' received!\n",
-                show_debug_msg=show_debug_msg,
+            sorted_golden_results = sorted(golden_results, key=lambda x: (-x[1], x[0]))
+            sorted_student_results = sorted(
+                student_results, key=lambda x: (-x[1], x[0])
             )
 
-            golden_top_100_freq_tokens.sort(key=lambda x: (x[1], x[0]))
-            student_top_100_freq_tokens.sort(key=lambda x: (x[1], x[0]))
-            # check if top 100 frequent tokens match
-            for curr_golden, curr_student in zip(
-                golden_top_100_freq_tokens,
-                student_top_100_freq_tokens,
+            for (
+                idx,
+                ((golden_token, golden_token_cnt), (student_token, student_token_cnt)),
+            ) in tqdm(
+                enumerate(zip(sorted_golden_results, sorted_student_results)),
+                desc=tqdm_desc,
             ):
-                # check if heaps number matches
-                self.assertion_wrapper(
-                    self.assertEqual,
-                    list(curr_golden),
-                    list(curr_student),
-                    debug_msg="Top 100 frequent tokens do not match.\n"
-                    + f"Expect {list(curr_golden)} but {list(curr_student)} received!\n"
-                    + f"Expect results: {golden_top_100_freq_tokens}\n"
-                    + f"but received: {student_top_100_freq_tokens}",
-                    show_debug_msg=show_debug_msg,
-                )
+                # check if unique token count matches
+                if (
+                    golden_token != student_token
+                    or golden_token_cnt != student_token_cnt
+                ):
+                    self.assertion_wrapper(
+                        self.assertEqual,
+                        (golden_token, golden_token_cnt),
+                        (student_token, student_token_cnt),
+                        debug_msg="Token does not match.\n"
+                        + f"Expect '{(golden_token, golden_token_cnt)}' but '{(student_token, student_token_cnt)}' received!\n"
+                        + f"Expected Output: '{sorted_golden_results}'\n"
+                        + f"Received Output: '{sorted_student_results}'",
+                        show_debug_msg=show_debug_msg,
+                    )
+                set_score(round((idx + 1) * max_score / len(self.sentences), 2))
+
         except AssertionError:
             raise
         except Exception as e:

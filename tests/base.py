@@ -114,6 +114,7 @@ class TestJupyterNotebook(unittest.TestCase):
                 raise ValueError(
                     f"Version Mismatched. Expects notebook version: '{cls.autograder_version}', but submission has version: '{student_version}'!"
                 )
+            cls.import_checker(cls)
             cls.suppress_print(cls, False)
             cls.is_compilable = True
             cls.err = None
@@ -184,7 +185,6 @@ class TestJupyterNotebook(unittest.TestCase):
         # print(result)
 
     def checker(self) -> None:
-
         if self.__class__.err_has_been_reported is None:
             return
 

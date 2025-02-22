@@ -105,7 +105,7 @@ class TestPA1(TestJupyterNotebook):
         Example attr_name: "tokenize_fancy_{store_type}"
         """
         try:
-            if prerequisite_test_tags is None or len(prerequisite_test_tags) == 0:
+            if len(prerequisite_test_tags) == 0 or len(prerequisite_test_tags) == 0:
                 return
 
             error_msg = f"Need to first pass the test(s) for function(s): {', '.join(prerequisite_func_names)} !"
@@ -137,7 +137,12 @@ class TestPA1(TestJupyterNotebook):
         except AssertionError:
             raise
         except Exception as e:
-            self.assertTrue(False, f"Code does not compile:\n{e}")
+            self.assertion_wrapper(
+                self.assertTrue,
+                False,
+                debug_msg=f"Code does not compile:\n{e}",
+                show_debug_msg=show_debug_msg,
+            )
 
     def save_class_attr(self, tag_name: str, results_set: tuple[Any, Any]) -> None:
         store_class_var = f"{tag_name}_{{store_type}}"

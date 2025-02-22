@@ -16,7 +16,7 @@ from tests.PA2.solution import (
 from tests.PA2.base import DebugMsgConfig, TestPA2
 
 
-class TestTokenization(TestPA2):
+class Testpreprocessing(TestPA2):
     def setUp(self):
         return super().setUp()
 
@@ -214,11 +214,11 @@ class TestTokenization(TestPA2):
     @weight(10)
     @visibility("visible")
     @number("5.1")
-    def test_51_tokenization_space_yesStopping_and_stemming_porter(self):
-        """Checking tokenization(tokenize_type="space", stopwords=stopwords, stemming_type="porter")"""
-        self.tokenization_tester(
-            tag_name="tokenization_space_yesStopping_and_stemming_porter",
-            tqdm_desc="test_tokenization_space_full",
+    def test_51_preprocessing_space_yesStopping_and_stemming_porter(self):
+        """Checking preprocessing(tokenize_type="space", stopwords=stopwords, stemming_type="porter")"""
+        self.preprocessing_tester(
+            tag_name="preprocessing_space_yesStopping_and_stemming_porter",
+            tqdm_desc="test_preprocessing_space_full",
             stopwords=self.stopwords,
             tokenizer_type="space",
             stemming_type="porter",
@@ -228,29 +228,29 @@ class TestTokenization(TestPA2):
     @visibility("visible")
     # @hide_errors("Test failed!")
     @number("5.2")
-    def test_52_tokenization_fancy_yesStopping_and_stemming_porter(self):
-        """Checking tokenization(tokenize_type="fancy", stopwords=stopwords, stemming_type="porter")"""
-        self.tokenization_tester(
-            tag_name="tokenization_fancy_yesStopping_and_stemming_porter",
-            tqdm_desc="test_tokenization_fancy_full",
+    def test_52_preprocessing_fancy_yesStopping_and_stemming_porter(self):
+        """Checking preprocessing(tokenize_type="fancy", stopwords=stopwords, stemming_type="porter")"""
+        self.preprocessing_tester(
+            tag_name="preprocessing_fancy_yesStopping_and_stemming_porter",
+            tqdm_desc="test_preprocessing_fancy_full",
             stopwords=self.stopwords,
             tokenizer_type="fancy",
             stemming_type="porter",
             show_debug_msg=DebugMsgConfig(
                 show_msg=False,
-                test_tag="""(5.2) Checking tokenization(tokenize_type="fancy", stopwords=stopwords, stemming_type="porter")""",
+                test_tag="""(5.2) Checking preprocessing(tokenize_type="fancy", stopwords=stopwords, stemming_type="porter")""",
             ),
         )
 
     @weight(4)
     @visibility("visible")
     @number("6.1")
-    def test_61_heaps_tokenization_space_yesStopping_and_stemming_porter(self):
+    def test_61_heaps_preprocessing_space_yesStopping_and_stemming_porter(self):
         """Checking heaps() using results from 5.1"""
         self.heaps_tester(
             prerequisite=(
-                "tokenization_space_yesStopping_and_stemming_porter_{store_type}",
-                'tokenization(tokenize_type="space", stopwords=stopwords, stemming_type="porter")',
+                "preprocessing_space_yesStopping_and_stemming_porter_{store_type}",
+                'preprocessing(tokenize_type="space", stopwords=stopwords, stemming_type="porter")',
             )
         )
 
@@ -258,12 +258,12 @@ class TestTokenization(TestPA2):
     @visibility("visible")
     # @hide_errors("Test failed!")
     @number("6.2")
-    def test_61_heaps_tokenization_fancy_yesStopping_and_stemming_porter(self):
+    def test_61_heaps_preprocessing_fancy_yesStopping_and_stemming_porter(self):
         """Checking heaps() using results from 5.2"""
         self.heaps_tester(
             prerequisite=(
-                "tokenization_fancy_yesStopping_and_stemming_porter_{store_type}",
-                'tokenization(tokenize_type="fancy", stopwords=stopwords, stemming_type="porter")',
+                "preprocessing_fancy_yesStopping_and_stemming_porter_{store_type}",
+                'preprocessing(tokenize_type="fancy", stopwords=stopwords, stemming_type="porter")',
             ),
             show_debug_msg=DebugMsgConfig(
                 show_msg=False,
@@ -274,12 +274,12 @@ class TestTokenization(TestPA2):
     @weight(2.5)
     @visibility("visible")
     @number("7.1")
-    def test_71_statistics_tokenization_space_yesStopping_and_stemming_porter(self):
+    def test_71_statistics_preprocessing_space_yesStopping_and_stemming_porter(self):
         """Checking statistics() using results from 5.1"""
         self.zipf_tester(
             prerequisite=(
-                "tokenization_space_yesStopping_and_stemming_porter_{store_type}",
-                'tokenization(tokenize_type="space", stopwords=stopwords, stemming_type="porter")',
+                "preprocessing_space_yesStopping_and_stemming_porter_{store_type}",
+                'preprocessing(tokenize_type="space", stopwords=stopwords, stemming_type="porter")',
             )
         )
 
@@ -287,12 +287,12 @@ class TestTokenization(TestPA2):
     @visibility("visible")
     # @hide_errors("Test failed!")
     @number("7.2")
-    def test_72_statistics_tokenization_fancy_yesStopping_and_stemming_porter(self):
+    def test_72_statistics_preprocessing_fancy_yesStopping_and_stemming_porter(self):
         """Checking statistics() using results from 5.2"""
         self.zipf_tester(
             prerequisite=(
-                "tokenization_fancy_yesStopping_and_stemming_porter_{store_type}",
-                'tokenization(tokenize_type="fancy", stopwords=stopwords, stemming_type="porter")',
+                "preprocessing_fancy_yesStopping_and_stemming_porter_{store_type}",
+                'preprocessing(tokenize_type="fancy", stopwords=stopwords, stemming_type="porter")',
             ),
             show_debug_msg=DebugMsgConfig(
                 show_msg=False,
