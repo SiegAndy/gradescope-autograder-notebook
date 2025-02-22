@@ -446,7 +446,7 @@ class TestPA1(TestJupyterNotebook):
                 solution_evaluation_results_dict = defaultdict(dict)
                 for curr_entry in solution_evaluation_results:
                     curr_metric_name, curr_query_id, curr_metric_value = curr_entry
-                    solution_evaluation_results_dict[curr_metric_name][
+                    solution_evaluation_results_dict[curr_metric_name.lower()][
                         curr_query_id
                     ] = curr_metric_value
 
@@ -487,6 +487,7 @@ class TestPA1(TestJupyterNotebook):
                         show_debug_msg=show_debug_msg,
                     )
                     curr_metric_name, curr_query_id, curr_metric_value = curr_entry
+                    curr_metric_name = curr_metric_name.lower()
 
                     self.assertion_wrapper(
                         self.assertIn,
