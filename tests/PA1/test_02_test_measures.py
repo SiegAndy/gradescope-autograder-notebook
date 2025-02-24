@@ -29,7 +29,7 @@ class TestNotebookCompilable(TestPA1):
     def setUpClass(cls):
         super().setUpClass(
             data_folder_path="./data/2025-Spring-P1/data/test/",
-            allowed_imports=["re"],
+            allowed_imports=None,
         )
 
     @weight(0)
@@ -42,7 +42,7 @@ class TestNotebookCompilable(TestPA1):
             tqdm_desc="test_parse_qrels_trecrun",
             show_debug_msg=DebugMsgConfig(
                 show_msg_in_orig_test=False,
-                test_tag="(3.1) Checking parse_trecrun_results()",
+                test_tag="(0.3) Checking parse_trecrun_results()",
             ),
         )
 

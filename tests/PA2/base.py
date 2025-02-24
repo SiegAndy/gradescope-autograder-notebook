@@ -14,6 +14,25 @@ from tests.PA2.solution import (
     preprocessing,
 )
 
+allowed_imports = [
+    "re",
+    "Stemmer",
+    "heapq",
+    "collections",
+    "json",
+    "os",
+    "pathlib",
+    "string",
+    "urllib",
+    "gzip",
+    "matplotlib",
+    "plt",
+    "numpy",
+    "np",
+    "bm25s",
+    "BM25",
+]
+
 
 class TestPA2(TestJupyterNotebook):
     sentences: List[str]  # loaded sentence from dataset
@@ -156,7 +175,7 @@ class TestPA2(TestJupyterNotebook):
     ) -> None:
         # show_debug_msg is none or show_debug_msg.show_msg is true: show the debug msg to student
         # elsewise, do not show
-        show_debug_msg = None  # suppress error managements
+        # show_debug_msg = None  # suppress error managements
         if show_debug_msg is not None and not show_debug_msg.show_msg_in_orig_test:
             try:
                 assertion_method(*assertion_params, debug_msg)
@@ -179,7 +198,6 @@ class TestPA2(TestJupyterNotebook):
                 # print(e)
                 # print("=" * 50)
                 raise
-            # self.assertFalse(test_failed,msg=f"Test Failed!")
         else:
             assertion_method(*assertion_params, debug_msg)
 
@@ -195,7 +213,7 @@ class TestPA2(TestJupyterNotebook):
         **function_kwargs,
     ) -> None:
         try:
-            self.checker()
+            self.checker(show_debug_msg=show_debug_msg)
             solution_results, student_results = [], []
             function_name = solution_function.__name__
 
@@ -238,7 +256,12 @@ class TestPA2(TestJupyterNotebook):
         except AssertionError:
             raise
         except Exception as e:
-            self.assertTrue(False, f"Code does not compile:\n{e}")
+            self.assertion_wrapper(
+                self.assertTrue,
+                False,
+                debug_msg=f"Code does not compile:\n{e}",
+                show_debug_msg=show_debug_msg,
+            )
 
     def prerequisite_tester(
         self,
@@ -255,7 +278,7 @@ class TestPA2(TestJupyterNotebook):
         **function_kwargs,
     ) -> None:
         try:
-            self.checker()
+            self.checker(show_debug_msg=show_debug_msg)
             prev_results = self.prerequisite_check(
                 prerequisite_fn_tags=prerequisite_fn_tags,
                 prerequisite_fn_names=prerequisite_fn_names,
@@ -346,7 +369,12 @@ class TestPA2(TestJupyterNotebook):
         except AssertionError:
             raise
         except Exception as e:
-            self.assertTrue(False, f"Code does not compile:\n{e}")
+            self.assertion_wrapper(
+                self.assertTrue,
+                False,
+                debug_msg=f"Code does not compile:\n{e}",
+                show_debug_msg=show_debug_msg,
+            )
 
     def preprocessing_tester(
         self,
@@ -363,7 +391,7 @@ class TestPA2(TestJupyterNotebook):
         show_debug_msg: DebugMsgConfig = None,
     ) -> None:
         try:
-            self.checker()
+            self.checker(show_debug_msg=show_debug_msg)
 
             self.prerequisite_check(
                 prerequisite_fn_tags=prerequisite_fn_tags,
@@ -377,7 +405,7 @@ class TestPA2(TestJupyterNotebook):
             solution_results, student_results = [], []
 
             batch_size = num_of_sample_per_batch
-            pbar = tqdm(total=len(self.sentences), desc=tqdm_desc)
+            pbar = tqdm(self.sentences, total=len(self.sentences), desc=tqdm_desc)
             for idx in range(0, len(self.sentences), batch_size):
                 curr_test_sentences = self.sentences[idx : idx + batch_size]
 
@@ -448,7 +476,12 @@ class TestPA2(TestJupyterNotebook):
         except AssertionError:
             raise
         except Exception as e:
-            self.assertTrue(False, f"Code does not compile:\n{e}")
+            self.assertion_wrapper(
+                self.assertTrue,
+                False,
+                debug_msg=f"Code does not compile:\n{e}",
+                show_debug_msg=show_debug_msg,
+            )
 
     def zipf_tester(
         self,
@@ -461,7 +494,7 @@ class TestPA2(TestJupyterNotebook):
         show_debug_msg: DebugMsgConfig = None,
     ) -> None:
         try:
-            self.checker()
+            self.checker(show_debug_msg=show_debug_msg)
             prev_results = self.prerequisite_check(
                 prerequisite_fn_tags=prerequisite_fn_tags,
                 prerequisite_fn_names=prerequisite_fn_names,
@@ -499,6 +532,7 @@ class TestPA2(TestJupyterNotebook):
                 ((golden_token, golden_token_cnt), (student_token, student_token_cnt)),
             ) in tqdm(
                 enumerate(zip(sorted_golden_results, sorted_student_results)),
+                total=len(sorted_golden_results),
                 desc=tqdm_desc,
             ):
                 # check if unique token count matches
@@ -516,9 +550,14 @@ class TestPA2(TestJupyterNotebook):
                         + f"Received Output: '{sorted_student_results}'",
                         show_debug_msg=show_debug_msg,
                     )
-                set_score(round((idx + 1) * max_score / len(self.sentences), 2))
+                set_score(round((idx + 1) * max_score / len(golden_results), 2))
 
         except AssertionError:
             raise
         except Exception as e:
-            self.assertTrue(False, f"Code does not compile:\n{e}")
+            self.assertion_wrapper(
+                self.assertTrue,
+                False,
+                debug_msg=f"Code does not compile:\n{e}",
+                show_debug_msg=show_debug_msg,
+            )

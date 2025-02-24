@@ -3,3 +3,5 @@ tqdm
 testbook
 ipykernel
 matplotlib
+pystemmer 
+bm25s

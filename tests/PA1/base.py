@@ -183,7 +183,6 @@ class TestPA1(TestJupyterNotebook):
                 # print(e)
                 # print("=" * 50)
                 raise
-            # self.assertFalse(test_failed,msg=f"Test Failed!")
         else:
             assertion_method(*assertion_params, debug_msg)
 
@@ -195,7 +194,7 @@ class TestPA1(TestJupyterNotebook):
 
         try:
             tag_name = "parse_files"
-            self.checker()
+            self.checker(show_debug_msg=show_debug_msg)
 
             # get target functions' reflection
             # student_parse_query_relevance_mapping_func = self.client.ref(
@@ -269,7 +268,12 @@ class TestPA1(TestJupyterNotebook):
         except AssertionError:
             raise
         except Exception as e:
-            self.assertTrue(False, f"Code does not compile:\n{e}")
+            self.assertion_wrapper(
+                self.assertTrue,
+                False,
+                debug_msg=f"Code does not compile:\n{e}",
+                show_debug_msg=show_debug_msg,
+            )
 
     def individual_evaluation_metric_tester(
         self,
@@ -283,7 +287,7 @@ class TestPA1(TestJupyterNotebook):
     ):
         metric_allowance_threshold = 1.5e-4
         try:
-            self.checker()
+            self.checker(show_debug_msg=show_debug_msg)
             stored_ranklists_results = self.prerequisite_check(
                 prerequisite_test_tags=["parse_files"],
                 prerequisite_func_names=[
@@ -387,7 +391,12 @@ class TestPA1(TestJupyterNotebook):
         except AssertionError:
             raise
         except Exception as e:
-            self.assertTrue(False, f"Code does not compile:\n{e}")
+            self.assertion_wrapper(
+                self.assertTrue,
+                False,
+                debug_msg=f"Code does not compile:\n{e}",
+                show_debug_msg=show_debug_msg,
+            )
 
     def evaluation_func_tester(
         self,
@@ -402,7 +411,7 @@ class TestPA1(TestJupyterNotebook):
     ):
         try:
             metric_allowance_threshold = 1.5e-4
-            self.checker()
+            self.checker(show_debug_msg=show_debug_msg)
 
             required_func_names = [
                 func.__name__ for func in list(evaluation_params_dict.keys())
@@ -552,4 +561,9 @@ class TestPA1(TestJupyterNotebook):
         except AssertionError:
             raise
         except Exception as e:
-            self.assertTrue(False, f"Code does not compile:\n{e}")
+            self.assertion_wrapper(
+                self.assertTrue,
+                False,
+                debug_msg=f"Code does not compile:\n{e}",
+                show_debug_msg=show_debug_msg
+            )

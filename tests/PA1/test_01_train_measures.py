@@ -23,7 +23,7 @@ class TestNotebookCompilable(TestPA1):
     def setUpClass(cls):
         super().setUpClass(
             data_folder_path="./data/2025-Spring-P1/data/train/",
-            allowed_imports=["re"],
+            allowed_imports=None,
         )
 
     @weight(0)
@@ -31,7 +31,7 @@ class TestNotebookCompilable(TestPA1):
     @number("0.1")
     def test_0_01_ipynb_compilable_and_packages(self):
         """Checking Notebook Integrity and Packages"""
-        self.checker()
+        self.checker(show_debug_msg=None)
 
     @weight(0)
     @visibility("visible")

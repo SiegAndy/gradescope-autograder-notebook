@@ -25,16 +25,6 @@ in_gradescope = True if os.environ.get("in_gradescope", False) else False
 tqdm = tqdm if not in_gradescope else lambda x, **_: x
 
 SUBMISSION_BASE = SUBMISSION_BASE if in_gradescope else "./autograder/submission"
-# def exception_catcher(self: unittest.TestCase, func):
-#     def wrapper(*args, **kwargs):
-#         try:
-#             return func(*args, **kwargs)
-#         except AssertionError:
-#             raise
-#         except Exception as e:
-#             self.assertTrue(False, f"Code does not compile:\n{e}")
-
-#     return wrapper
 
 
 def pick_up_submission_notebook(submission_folder: str = SUBMISSION_BASE):
@@ -114,10 +104,18 @@ class TestJupyterNotebook(unittest.TestCase):
                 raise ValueError(
                     f"Version Mismatched. Expects notebook version: '{cls.autograder_version}', but submission has version: '{student_version}'!"
                 )
+
             cls.import_checker(cls)
-            cls.suppress_print(cls, False)
             cls.is_compilable = True
             cls.err = None
+
+            if (
+                cls.imported_disallowed_pkgs is not None
+                and len(cls.imported_disallowed_pkgs) > 0
+            ):
+                cls.err = ImportError(f"Import(s) not allowed!")
+                cls.err_has_been_reported = False
+            cls.suppress_print(cls, False)
         except Exception as e:
             # close the notebook kernel as exception occure
             cls.exit_kernel(cls)
@@ -125,13 +123,6 @@ class TestJupyterNotebook(unittest.TestCase):
             cls.is_compilable = False
             cls.err = e
             cls.err_has_been_reported = False
-
-    # def __getattribute__(self, name):
-    #     attr = super().__getattribute__(name)
-    #     # Apply the decorator to methods that start with 'test'
-    #     if name.startswith("test") and callable(attr):
-    #         return exception_catcher(self, attr)
-    #     return attr
 
     def setUp_kernel(self) -> TestbookNotebookClient:
         with self.notebook.client.setup_kernel(cleanup_kc=False):
@@ -166,8 +157,9 @@ class TestJupyterNotebook(unittest.TestCase):
 
     def import_checker(self):
         """Check imported packages"""
-        if not self.is_compilable:
-            return
+        # Disable import checker as is_compilable is set to None by default
+        # if not self.is_compilable:
+        #     return
 
         self.imported_disallowed_pkgs = None
         if self.allowed_imports is None:
@@ -182,34 +174,84 @@ class TestJupyterNotebook(unittest.TestCase):
         self.imported_disallowed_pkgs = ast.literal_eval(
             node.execute_result[0]["text/plain"]
         )
-        # print(result)
 
-    def checker(self) -> None:
+        # print(self.imported_disallowed_pkgs)
+
+    def assertion_wrapper(
+        self,
+        assertion_method: Callable,
+        *assertion_params,
+        debug_msg: str = None,
+        show_debug_msg: DebugMsgConfig = None,
+    ) -> None:
+        # show_debug_msg is none or show_debug_msg.show_msg is true: show the debug msg to student
+        # elsewise, do not show
+        # show_debug_msg = None  # suppress error managements
+        if show_debug_msg is not None and not show_debug_msg.show_msg_in_orig_test:
+            try:
+                print("pass 1")
+                assertion_method(*assertion_params, debug_msg)
+            except AssertionError as e:
+                prev_debug_msgs = getattr(self.__class__, "hidden_debug_msg", "")
+                print("pass 2")
+                curr_debug_msg = "\n".join(
+                    [
+                        prev_debug_msgs,
+                        "=" * 80,
+                        show_debug_msg.test_tag,
+                        "=" * 80,
+                        str(e),
+                        "=" * 80,
+                    ]
+                )
+                print("pass 3")
+                setattr(self.__class__, "hidden_debug_msg", curr_debug_msg)
+                # print("=" * 50)
+                # print(show_debug_msg.test_tag)
+                # print("=" * 50)
+                # print(e)
+                # print("=" * 50)
+                raise
+            # self.assertFalse(test_failed,msg=f"Test Failed!")
+        else:
+            assertion_method(*assertion_params, debug_msg)
+
+    def checker(self, show_debug_msg: DebugMsgConfig) -> None:
         if self.__class__.err_has_been_reported is None:
             return
 
         # only report detailed error once.
         if self.__class__.err_has_been_reported:
             msg = "See error message above."
-            return self.assertTrue(
+            return self.assertion_wrapper(
+                self.assertTrue,
                 False,
-                msg=msg,
+                debug_msg=msg,
+                show_debug_msg=show_debug_msg,
             )
 
         self.__class__.err_has_been_reported = True
         if not self.__class__.is_compilable:
             self.__class__.exit_kernel(self=self)
             msg = f"The notebook is not compilable! Detail: \n{self.__class__.err}"
-            self.assertTrue(
+            self.assertion_wrapper(
+                self.assertTrue,
                 self.__class__.is_compilable,
-                msg=msg,
+                debug_msg=msg,
+                show_debug_msg=show_debug_msg,
             )
 
-        if len(self.__class__.imported_disallowed_pkgs) > 0:
-            self.assertIn(
+        if (
+            self.__class__.allowed_imports is not None
+            and self.__class__.imported_disallowed_pkgs is not None
+            and len(self.__class__.imported_disallowed_pkgs) > 0
+        ):
+            self.assertion_wrapper(
+                self.assertIn,
                 self.__class__.imported_disallowed_pkgs,
                 self.__class__.allowed_imports,
-                f"Import(s) not allowed: {', '.join(f'<{name}>' for name in self.__class__.imported_disallowed_pkgs)}.",
+                debug_msg=f"Import(s) not allowed: {', '.join(f'<{name}>' for name in self.__class__.imported_disallowed_pkgs)}.",
+                show_debug_msg=show_debug_msg,
             )
 
     def clear_notebook_output(self, curr_line_count: int, line_limits: int = 50):

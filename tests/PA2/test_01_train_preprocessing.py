@@ -12,18 +12,18 @@ from tests.PA2.solution import (
     tokenize_fancy,
     tokenize_space,
 )
-from tests.PA2.base import TestPA2
+from tests.PA2.base import TestPA2, allowed_imports
 
 
 class TestNotebookCompilable(TestPA2):
-    def setUp(self, set_score=None):
+    def setUp(self):
         return super().setUp()
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass(
-            data_file_path="P1-train.gz",
-            allowed_imports=["re", "Stemmer", "heapq", "bm25s"],
+            data_file_path="P2-train.gz",
+            allowed_imports=allowed_imports,
         )
 
     @weight(0)
@@ -31,7 +31,7 @@ class TestNotebookCompilable(TestPA2):
     @number("0.1")
     def test_0_01_ipynb_compilable_and_packages(self):
         """Checking Notebook Integrity and Packages"""
-        self.checker()
+        self.checker(show_debug_msg=None)
 
     @partial_credit(0)
     @visibility("visible")
@@ -69,7 +69,7 @@ class TestNotebookCompilable(TestPA2):
             tag_name="sample_tokenize_fancy",
             tqdm_desc="test_sample_tokenize_fancy",
             prerequisite_fn_tags=["sample_tokenize_space"],
-            prerequisite_fn_names=["tokenized_space"],
+            prerequisite_fn_names=["tokenize_space"],
             use_prev_results=False,
             set_score=set_score,
             max_score=0,
@@ -86,7 +86,7 @@ class TestNotebookCompilable(TestPA2):
             tag_name="sample_tokenize_space_yesStopping",
             tqdm_desc="test_sample_tokenize_space_yesStopping",
             prerequisite_fn_tags=["sample_tokenize_space"],
-            prerequisite_fn_names=["tokenized_space"],
+            prerequisite_fn_names=["tokenize_space"],
             use_prev_results=True,
             set_score=set_score,
             max_score=0,
@@ -103,7 +103,7 @@ class TestNotebookCompilable(TestPA2):
             tag_name="sample_tokenize_fancy_yesStopping",
             tqdm_desc="test_sample_tokenize_fancy_yesStopping",
             prerequisite_fn_tags=["sample_tokenize_fancy"],
-            prerequisite_fn_names=["tokenized_space", "tokenized_space"],
+            prerequisite_fn_names=["tokenize_space", "tokenize_space"],
             use_prev_results=True,
             set_score=set_score,
             max_score=0,
@@ -119,7 +119,7 @@ class TestNotebookCompilable(TestPA2):
             tag_name="sample_tokenize_space_noStopping_and_stemming_s",
             tqdm_desc="test_sample_tokenize_space_noStopping_and_stemming_s",
             prerequisite_fn_tags=["sample_tokenize_space"],
-            prerequisite_fn_names=["tokenized_space"],
+            prerequisite_fn_names=["tokenize_space"],
             use_prev_results=True,
             set_score=set_score,
             max_score=0,
@@ -135,7 +135,7 @@ class TestNotebookCompilable(TestPA2):
             tag_name="sample_tokenize_fancy_noStopping_and_stemming_s",
             tqdm_desc="test_sample_tokenize_fancy_noStopping_and_stemming_s",
             prerequisite_fn_tags=["sample_tokenize_fancy"],
-            prerequisite_fn_names=["tokenized_space", "tokenize_fancy"],
+            prerequisite_fn_names=["tokenize_space", "tokenize_fancy"],
             use_prev_results=True,
             set_score=set_score,
             max_score=0,
@@ -156,14 +156,16 @@ class TestNotebookCompilable(TestPA2):
             tag_name="sample_preprocessing_space_yesStopping_and_stemming_porter",
             tqdm_desc="test_sample_preprocessing_space_full",
             prerequisite_fn_tags=[
+                "sample_tokenize_4grams",
                 "sample_tokenize_space_yesStopping",
                 "sample_tokenize_fancy_yesStopping",
                 "sample_tokenize_space_noStopping_and_stemming_s",
                 "sample_tokenize_fancy_noStopping_and_stemming_s",
             ],
             prerequisite_fn_names=[
-                "tokenized_space",
-                "tokenized_fancy",
+                "tokenize_space",
+                "tokenize_4grams",
+                "tokenize_fancy",
                 "stopping",
                 "stemming_s",
             ],
