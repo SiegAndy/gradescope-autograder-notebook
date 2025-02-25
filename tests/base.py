@@ -162,7 +162,7 @@ class TestJupyterNotebook(unittest.TestCase):
         #     return
 
         self.imported_disallowed_pkgs = None
-        if self.allowed_imports is None:
+        if not hasattr(self, "allowed_imports") or self.allowed_imports is None:
             return
 
         # direct inject code into notebook for checking the modules, a workaround
@@ -242,7 +242,8 @@ class TestJupyterNotebook(unittest.TestCase):
             )
 
         if (
-            self.__class__.allowed_imports is not None
+            hasattr(self.__class__, "allowed_imports")
+            and self.__class__.allowed_imports is not None
             and self.__class__.imported_disallowed_pkgs is not None
             and len(self.__class__.imported_disallowed_pkgs) > 0
         ):
