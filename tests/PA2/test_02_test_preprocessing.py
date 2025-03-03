@@ -6,7 +6,6 @@ from gradescope_utils.autograder_utils.decorators import (
 )
 
 from tests.PA2.solution import (
-    stemming_porter,
     stemming_s,
     stopping,
     tokenize_4grams,
@@ -23,8 +22,7 @@ class Testpreprocessing(TestPA2):
     @classmethod
     def setUpClass(cls):
         super().setUpClass(
-            # data_file_path="P1-train.gz",
-            data_file_path="webpage.gz",
+            test_type="protected",
             allowed_imports=allowed_imports,
         )
         cls.sentences = cls.sentences[:500]

@@ -9,7 +9,7 @@ from tests.base import (
 
 from tests.PA2.solution import (
     autograder_version,
-    load_file,
+    download_file,
     freq_stats,
     preprocessing,
 )
@@ -31,6 +31,8 @@ allowed_imports = [
     "np",
     "bm25s",
     "BM25",
+    "zipfile",
+    "math",
 ]
 
 
@@ -42,17 +44,19 @@ class TestPA2(TestJupyterNotebook):
     @classmethod
     def setUpClass(
         cls,
-        data_file_path: str,
+        test_type: str,
         allowed_imports: List[str] = None,
     ):
         cls.allowed_imports = allowed_imports
-        cls.sentences = load_file(
-            data_file_path,
-            gz_zip=True if data_file_path.endswith(".gz") else False,
+        public_tests_sentences, protected_tests_sentences, _, cls.stopwords = (
+            download_file(
+                "P2-data.zip",
+            )
         )
-        cls.stopwords = load_file(
-            "stopwords.txt",
-            gz_zip=False,
+        cls.sentences = (
+            public_tests_sentences
+            if "public" in test_type
+            else protected_tests_sentences
         )
         super().setUpClass(autograder_version=autograder_version)
 

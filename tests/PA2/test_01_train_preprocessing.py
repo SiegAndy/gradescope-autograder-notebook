@@ -22,7 +22,7 @@ class TestNotebookCompilable(TestPA2):
     @classmethod
     def setUpClass(cls):
         super().setUpClass(
-            data_file_path="P2-train.gz",
+            test_type="public",
             allowed_imports=allowed_imports,
         )
 
