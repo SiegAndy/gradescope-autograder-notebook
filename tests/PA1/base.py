@@ -490,6 +490,15 @@ class TestPA1(TestJupyterNotebook):
                     "student_evaluation_results"
                 )
 
+                self.assertion_wrapper(
+                    self.assertEqual,
+                    len(solution_evaluation_results),
+                    len(student_evaluation_results),
+                    debug_msg=f"Output Length Mismatched!\n"
+                    + f"Expected {len(solution_evaluation_results)} evalution entries but {len(student_evaluation_results)} received!",
+                    show_debug_msg=show_debug_msg,
+                )
+
                 student_evaluation_results_dict = defaultdict(dict)
                 for curr_entry in student_evaluation_results:
                     self.assertion_wrapper(
@@ -565,5 +574,5 @@ class TestPA1(TestJupyterNotebook):
                 self.assertTrue,
                 False,
                 debug_msg=f"Code does not compile:\n{e}",
-                show_debug_msg=show_debug_msg
+                show_debug_msg=show_debug_msg,
             )
