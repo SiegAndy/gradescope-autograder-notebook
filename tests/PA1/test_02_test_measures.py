@@ -341,7 +341,7 @@ class TestNotebookCompilable(TestPA1):
         )
 
     @weight(0)
-    @visibility("hidden")
+    @visibility("after_published")
     @number("0.0")
     def test_9_99_instructor_debug_msg(self):
         """Debug Messages From Previous Failed Private Tests"""

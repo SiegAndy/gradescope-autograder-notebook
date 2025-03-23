@@ -337,7 +337,7 @@ class Testpreprocessing(TestPA2):
         )
 
     @partial_credit(0)
-    @visibility("hidden")
+    @visibility("after_published")
     @number("0.0")
     def test_9_99_instructor_debug_msg(self, set_score=None):
         """Debug Messages From Previous Failed Private Tests"""

@@ -173,8 +173,8 @@ class TestNotebookCompilable(TestPA1):
                 average_precision: [10],
                 ndcg: [10],
                 binary_preference: [],
-                interpolated_precision: [5],
-                r_precision: [],
+                # interpolated_precision: [5],
+                # r_precision: [],
             },
             prerequisite_test_tags=[
                 "sample_reciprocal_rank_at_10",

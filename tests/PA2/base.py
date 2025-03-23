@@ -163,12 +163,28 @@ class TestPA2(TestJupyterNotebook):
                 show_debug_msg=show_debug_msg,
             )
 
-    def save_class_attr(self, tag_name: str, results_set: tuple[Any, Any]) -> None:
+    def save_class_attr(
+        self,
+        tag_name: str,
+        results_set: tuple[Any, Any],
+        show_debug_msg: DebugMsgConfig = None,
+    ) -> None:
         store_class_var = f"{tag_name}_{{store_type}}"
         for results, store_type in zip(results_set, ["solution", "student"]):
             setattr(
                 self.__class__, store_class_var.format(store_type=store_type), results
             )
+            in_gradescope = True if os.environ.get("in_gradescope", False) else False
+            if not in_gradescope and store_type != "solution" or show_debug_msg is None:
+                continue
+            record_tag = show_debug_msg.test_tag
+            record_folder = "./data/2025-Spring-P2/data/records/"
+            import os, json
+
+            os.makedirs(record_folder, exist_ok=True)
+            curr_record_file = os.path.join(record_folder, tag_name + ".json")
+            with open(curr_record_file, "w", encoding="utf-8") as f:
+                json.dump({record_tag: results}, f, indent=4)
 
     def assertion_wrapper(
         self,
@@ -256,6 +272,7 @@ class TestPA2(TestJupyterNotebook):
             self.save_class_attr(
                 tag_name=tag_name if tag_name is not None else function_name,
                 results_set=[solution_results, student_results],
+                show_debug_msg=show_debug_msg,
             )
         except AssertionError:
             raise
@@ -369,6 +386,7 @@ class TestPA2(TestJupyterNotebook):
             self.save_class_attr(
                 tag_name=tag_name if tag_name is not None else function_name,
                 results_set=[solution_results, student_results],
+                show_debug_msg=show_debug_msg,
             )
         except AssertionError:
             raise
@@ -475,7 +493,9 @@ class TestPA2(TestJupyterNotebook):
                 student_results.extend(tokenized_results)
 
             self.save_class_attr(
-                tag_name=tag_name, results_set=[solution_results, student_results]
+                tag_name=tag_name,
+                results_set=[solution_results, student_results],
+                show_debug_msg=show_debug_msg,
             )
         except AssertionError:
             raise
