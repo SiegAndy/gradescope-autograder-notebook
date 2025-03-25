@@ -484,7 +484,10 @@ class TestPA3(TestJupyterNotebook):
             )
 
             query_not_found = []
-            ranklist_mismatch = []
+            partial_score_0_8 = [] # ranklist is correct while score is incorrect
+            partial_score_0_5 = [] # ranklist is incorrect while score is correct
+            fully_correct = []
+
             for query_id, solution_query_ranklist in tqdm(
                 solution_results.items(), total=len(solution_results), desc=tqdm_desc
             ):
@@ -492,34 +495,54 @@ class TestPA3(TestJupyterNotebook):
                     query_not_found.append(query_id)
                     continue
                 student_query_ranklist = student_results[query_id]
-                for (curr_solution_doc, curr_solution_doc_score), (
-                    curr_student_doc,
-                    curr_student_doc_score,
-                ) in zip(solution_query_ranklist, student_query_ranklist):
-                    if (
-                        curr_solution_doc != curr_student_doc
-                        or abs(curr_solution_doc_score - curr_student_doc_score)
-                        > metric_allowance_threshold
-                    ):
-                        ranklist_mismatch.append(
-                            (query_id, solution_query_ranklist, student_query_ranklist)
-                        )
+
+                solution_docs = [doc for doc, _ in solution_query_ranklist]
+                student_docs = [doc for doc, _ in student_query_ranklist]
+
+                solution_scores = [score for _, score in solution_query_ranklist]
+                student_scores = [score for _, score in student_query_ranklist]
+
+                # Check if document lists are identical
+                if solution_docs == student_docs:
+                    # Check if all corresponding scores are within the acceptable threshold
+                    if all(abs(sol_score - stu_score) <= metric_allowance_threshold for sol_score, stu_score in zip(solution_scores, student_scores)):
+                        fully_correct.append(query_id)
+                    else:
+                        partial_score_0_8.append((query_id, solution_query_ranklist, student_query_ranklist))
+                else:
+                    # Check if any scores match within the threshold
+                    score_match = any(abs(sol_score - stu_score) <= metric_allowance_threshold for sol_score, stu_score in zip(solution_scores, student_scores))
+                    if score_match:
+                        partial_score_0_5.append(query_id)
 
             debug_msg = ""
-            if len(query_not_found) > 0:
+            if query_not_found:
                 debug_msg += f"\nQuery not Found in the Results! Missing Queries: {query_not_found}\n"
-            if len(ranklist_mismatch) > 0:
-                debug_msg += f"\nQuery Results Incorrect!\n"
+            
+            if partial_score_0_8:
+                debug_msg += f"\nQueries with Correct Documents but Incorrect Scores: {[query for query, _, _ in partial_score_0_8]}\n"
+
+            if partial_score_0_5:
+                debug_msg += f"\nQueries with Incorrect Documents but Some Correct Scores: {[query for query, _, _ in partial_score_0_5]}\n"
+
+            ranklist_mismatch = partial_score_0_8 + partial_score_0_5
+            if ranklist_mismatch:
+                debug_msg += f"\nIncorrect Query Results:\n"
                 +"\n".join(
                     [
                         f"Query: {query_id}\n\tExpected Ranklist: {solution_query_ranklist}\n\tReceived Ranklist: {student_query_ranklist}"
-                        for query_id, solution_query_ranklist in ranklist_mismatch
+                        for query_id, solution_query_ranklist, student_query_ranklist in ranklist_mismatch
                     ]
                 )
-            total_cnt = len(solution_query_ranklist)
-            total_mismatch = len(query_not_found) + len(ranklist_mismatch)
-            set_score(round((total_cnt - total_mismatch) * max_score / total_cnt, 2))
-            # check if total token count matches
+
+            total_cnt = len(solution_results)
+            total_score = (
+                len(fully_correct) * 1.0 +
+                len(partial_score_0_8) * 0.8 +
+                len(partial_score_0_5) * 0.5
+            )
+            set_score(round((total_score / total_cnt) * max_score, 2))
+
             self.assertion_wrapper(
                 self.assertEqual,
                 len(debug_msg),
