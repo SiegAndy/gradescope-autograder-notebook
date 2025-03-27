@@ -16,7 +16,7 @@ class TestPublic(TestPA3):
     def setUpClass(cls):
         super().setUpClass(
             test_type="public",
-            level_1_limit=100,
+            level_1_limit=60,
             level_2_limit=10,
             allowed_imports=None,
         )

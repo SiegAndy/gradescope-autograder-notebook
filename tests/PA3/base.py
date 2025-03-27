@@ -32,23 +32,11 @@ class TestPA3(TestJupyterNotebook):
     ):
         cls.save_solution_flag = False
         cls.allowed_imports = allowed_imports
-        public_tests_docs, public_tests_queries = download_file(
-            "P3-data.zip",
-        )
+        documents, _, public_queries, protected_queries = download_file("P3-data.zip")
 
-        # TODO: Have a real dataset with valid queries and protected docs
-        protected_tests_docs, protected_tests_queries = (
-            public_tests_docs,
-            public_tests_queries,
-        )
-        # cls.queries = (
-        #     public_tests_queries if "public" in test_type else protected_tests_queries
-        # )
+        cls.queries = public_queries if "public" in test_type else protected_queries
 
-        cls.queries = {0: "of aa", 1: "yes and no"}
-        cls.documents = (
-            public_tests_docs if "public" in test_type else protected_tests_docs
-        )
+        cls.documents = documents
 
         cls.level_1_limit = level_1_limit
         cls.level_2_limit = level_2_limit
@@ -184,10 +172,10 @@ class TestPA3(TestJupyterNotebook):
 
             self.client.inject(
                 f"""
-                    public_tests_docs, public_tests_queries = download_file(
+                    documents, _, public_queries, protected_queries = download_file(
                         "P3-data.zip",
                     )
-                    student_inverted_index = build_inverted_index(public_tests_docs)
+                    student_inverted_index = build_inverted_index(documents)
                 """,
                 pop=True,
             )
@@ -229,6 +217,7 @@ class TestPA3(TestJupyterNotebook):
         student_method = self.client.ref("tf")
         total_cnt = 0
         mismatches = []
+        failed = []
 
         top_terms = sorted(
             solution_inverted_index.postings_lists.items(),
@@ -236,6 +225,7 @@ class TestPA3(TestJupyterNotebook):
             reverse=True,
         )[: self.level_1_limit]
 
+        idx = 0
         for curr_term, postinglist in tqdm(
             top_terms, total=len(top_terms), desc=tqdm_desc
         ):
@@ -244,33 +234,61 @@ class TestPA3(TestJupyterNotebook):
             ]
             for curr_doc_id, curr_solution_term_tf in top_docs:
                 total_cnt += 1
-                curr_student_tf = self.method_wrapper(
-                    student_method,
-                    inverted_index=student_inverted_index,
-                    doc_id=curr_doc_id,
-                    term=curr_term,
-                )
+                try:
+                    curr_student_tf = self.method_wrapper(
+                        student_method,
+                        inverted_index=student_inverted_index,
+                        doc_id=curr_doc_id,
+                        term=curr_term,
+                    )
+                except Exception as e:
+                    failed.append(((curr_term, curr_doc_id, str(e))))
                 if curr_student_tf != curr_solution_term_tf:
                     mismatches.append(
                         (curr_term, curr_doc_id, curr_solution_term_tf, curr_student_tf)
                     )
 
-                set_score(
-                    round((total_cnt - len(mismatches)) * max_score / total_cnt, 2)
+                # cleanup the notebook output as ipython core will give out warning
+                # when output has 200? more line and corrupts reflection of the function output
+                idx += 1
+                self.clear_notebook_output(idx)
+
+        total_err_cnt = len(mismatches) + len(failed)
+        set_score(round((total_cnt - total_err_cnt) * max_score / total_cnt, 2))
+
+        debug_msg = "\n"
+        if failed:
+            debug_msg += (
+                f"Term Frequency Failed Test Cases Count: {len(failed)}\n"
+                + "\n".join(
+                    [
+                        f"\tTerm: '{term}' at Doc: '{doc_id}': Failed Reason: '{err_msg}'."
+                        for term, doc_id, err_msg in failed
+                    ]
                 )
-                self.assertion_wrapper(
-                    self.assertEqual,
-                    len(mismatches),
-                    0,
-                    debug_msg=f"Term Frequency Mismatch Found! Mismatch Length: {len(mismatches)}\n"
-                    + "\n".join(
-                        [
-                            f"Expect TF '{solution_term_tf}' but '{curr_student_tf}' received for Term: {term} at Doc: {doc_id}."
-                            for term, doc_id, solution_term_tf, curr_student_tf in mismatches
-                        ]
-                    ),
-                    show_debug_msg=show_debug_msg,
+                + "\n"
+            )
+
+        if mismatches:
+            debug_msg += (
+                f"Term Frequency Mismatch Found! Mismatch Count: {len(mismatches)}\n"
+                + "\n".join(
+                    [
+                        f"\tTerm: '{term}' at Doc: '{doc_id}': Expect TF '{solution_term_tf}' but '{curr_student_tf}' received."
+                        for term, doc_id, solution_term_tf, curr_student_tf in mismatches
+                    ]
                 )
+            )
+
+        debug_msg = debug_msg.rstrip()
+
+        self.assertion_wrapper(
+            self.assertEqual,
+            total_err_cnt,
+            0,
+            debug_msg=debug_msg,
+            show_debug_msg=show_debug_msg,
+        )
 
     def df_tester(
         self,
@@ -282,41 +300,70 @@ class TestPA3(TestJupyterNotebook):
         show_debug_msg: DebugMsgConfig = None,
     ) -> None:
         student_method = self.client.ref("df")
-        total_cnt = 0
         mismatches = []
+        failed = []
 
         top_terms = sorted(
             solution_inverted_index.df_cache.items(),
             key=lambda kv: kv[1],
             reverse=True,
         )[: self.level_1_limit]
+        total_cnt = len(top_terms)
 
-        for term, solution_term_df in tqdm(
-            top_terms,
-            total=len(top_terms),
+        for idx, (curr_term, solution_term_df) in tqdm(
+            enumerate(top_terms),
+            total=total_cnt,
             desc=tqdm_desc,
         ):
-            total_cnt += 1
-            curr_student_df = self.method_wrapper(
-                student_method,
-                inverted_index=student_inverted_index,
-                term=term,
-            )
-            if curr_student_df != solution_term_df:
-                mismatches.append((term, solution_term_df, curr_student_df))
+            # cleanup the notebook output as ipython core will give out warning
+            # when output has 200? more line and corrupts reflection of the function output
+            self.clear_notebook_output(idx)
 
-        set_score(round((total_cnt - len(mismatches)) * max_score / total_cnt, 2))
+            try:
+                curr_student_df = self.method_wrapper(
+                    student_method,
+                    inverted_index=student_inverted_index,
+                    term=curr_term,
+                )
+            except Exception as e:
+                failed.append(((curr_term, str(e))))
+            if curr_student_df != solution_term_df:
+                mismatches.append((curr_term, solution_term_df, curr_student_df))
+
+        total_err_cnt = len(mismatches) + len(failed)
+        set_score(round((total_cnt - total_err_cnt) * max_score / total_cnt, 2))
+
+        debug_msg = "\n"
+        if failed:
+            debug_msg += (
+                f"Document Frequency Failed Test Cases Count: {len(failed)}\n"
+                + "\n".join(
+                    [
+                        f"\tTerm: '{term}': Failed Reason: '{err_msg}'."
+                        for term, err_msg in failed
+                    ]
+                )
+                + "\n"
+            )
+
+        if mismatches:
+            debug_msg += (
+                f"Document Frequency Mismatch Found! Mismatch Count: {len(mismatches)}\n"
+                + "\n".join(
+                    [
+                        f"\tTerm: '{term}': Expect DF '{solution_term_df}' but '{curr_student_df}' received."
+                        for term, solution_term_df, curr_student_df in mismatches
+                    ]
+                )
+            )
+
+        debug_msg = debug_msg.rstrip()
+
         self.assertion_wrapper(
             self.assertEqual,
-            len(mismatches),
+            total_err_cnt,
             0,
-            debug_msg=f"Document Frequency Mismatch Found! Mismatch Length: {len(mismatches)}\n"
-            + "\n".join(
-                [
-                    f"Expect DF '{solution_term_df}' but '{curr_student_df}' received for Term: {term}."
-                    for term, solution_term_df, curr_student_df in mismatches
-                ]
-            ),
+            debug_msg=debug_msg,
             show_debug_msg=show_debug_msg,
         )
 
@@ -330,40 +377,70 @@ class TestPA3(TestJupyterNotebook):
         show_debug_msg: DebugMsgConfig = None,
     ) -> None:
         student_method = self.client.ref("cf")
-        total_cnt = 0
         mismatches = []
+        failed = []
 
         top_terms = sorted(
             solution_inverted_index.cf_cache.items(),
             key=lambda kv: kv[1],
             reverse=True,
         )[: self.level_1_limit]
-        for term, solution_term_cf in tqdm(
-            top_terms,
-            total=len(top_terms),
+        total_cnt = len(top_terms)
+
+        for idx, (curr_term, solution_term_cf) in tqdm(
+            enumerate(top_terms),
+            total=total_cnt,
             desc=tqdm_desc,
         ):
-            total_cnt += 1
-            curr_student_cf = self.method_wrapper(
-                student_method,
-                inverted_index=student_inverted_index,
-                term=term,
-            )
-            if curr_student_cf != solution_term_cf:
-                mismatches.append((term, solution_term_cf, curr_student_cf))
+            # cleanup the notebook output as ipython core will give out warning
+            # when output has 200? more line and corrupts reflection of the function output
+            self.clear_notebook_output(idx)
 
-        set_score(round((total_cnt - len(mismatches)) * max_score / total_cnt, 2))
+            try:
+                curr_student_cf = self.method_wrapper(
+                    student_method,
+                    inverted_index=student_inverted_index,
+                    term=curr_term,
+                )
+            except Exception as e:
+                failed.append(((curr_term, str(e))))
+            if curr_student_cf != solution_term_cf:
+                mismatches.append((curr_term, solution_term_cf, curr_student_cf))
+
+        total_err_cnt = len(mismatches) + len(failed)
+        set_score(round((total_cnt - total_err_cnt) * max_score / total_cnt, 2))
+
+        debug_msg = "\n"
+        if failed:
+            debug_msg += (
+                f"Collection Frequency Failed Test Cases Count: {len(failed)}\n"
+                + "\n".join(
+                    [
+                        f"\tTerm: '{term}': Failed Reason: '{err_msg}'."
+                        for term, err_msg in failed
+                    ]
+                )
+                + "\n"
+            )
+
+        if mismatches:
+            debug_msg += (
+                f"Collection Frequency Mismatch Found! Mismatch Count: {len(mismatches)}\n"
+                + "\n".join(
+                    [
+                        f"\tTerm: '{term}': Expect CF '{solution_term_df}' but '{curr_student_df}' received."
+                        for term, solution_term_df, curr_student_df in mismatches
+                    ]
+                )
+            )
+
+        debug_msg = debug_msg.rstrip()
+
         self.assertion_wrapper(
             self.assertEqual,
-            len(mismatches),
+            total_err_cnt,
             0,
-            debug_msg=f"Collection Frequency Mismatch Found! Mismatch Length: {len(mismatches)}\n"
-            + "\n".join(
-                [
-                    f"Expect CF '{solution_term_cf}' but '{curr_student_cf}' received for Term: {term}."
-                    for term, solution_term_cf, curr_student_cf in mismatches
-                ]
-            ),
+            debug_msg=debug_msg,
             show_debug_msg=show_debug_msg,
         )
 
@@ -484,8 +561,9 @@ class TestPA3(TestJupyterNotebook):
             )
 
             query_not_found = []
-            partial_score_0_8 = [] # ranklist is correct while score is incorrect
-            partial_score_0_5 = [] # ranklist is incorrect while score is correct
+            fully_incorrect = []
+            partial_score_0_8 = []  # ranklist is correct while score is incorrect
+            partial_score_0_5 = []  # ranklist is incorrect while score is correct
             fully_correct = []
 
             for query_id, solution_query_ranklist in tqdm(
@@ -505,47 +583,73 @@ class TestPA3(TestJupyterNotebook):
                 # Check if document lists are identical
                 if solution_docs == student_docs:
                     # Check if all corresponding scores are within the acceptable threshold
-                    if all(abs(sol_score - stu_score) <= metric_allowance_threshold for sol_score, stu_score in zip(solution_scores, student_scores)):
+                    if all(
+                        abs(sol_score - stu_score) <= metric_allowance_threshold
+                        for sol_score, stu_score in zip(solution_scores, student_scores)
+                    ):
                         fully_correct.append(query_id)
                     else:
-                        partial_score_0_8.append((query_id, solution_query_ranklist, student_query_ranklist))
+                        partial_score_0_8.append(
+                            (query_id, solution_query_ranklist, student_query_ranklist)
+                        )
                 else:
                     # Check if any scores match within the threshold
-                    score_match = any(abs(sol_score - stu_score) <= metric_allowance_threshold for sol_score, stu_score in zip(solution_scores, student_scores))
+                    score_match = any(
+                        abs(sol_score - stu_score) <= metric_allowance_threshold
+                        for sol_score, stu_score in zip(solution_scores, student_scores)
+                    )
                     if score_match:
                         partial_score_0_5.append(query_id)
+                    else:
+                        fully_incorrect.append(
+                            (query_id, solution_query_ranklist, student_query_ranklist)
+                        )
 
-            debug_msg = ""
+            debug_msgs = ["\n"]
             if query_not_found:
-                debug_msg += f"\nQuery not Found in the Results! Missing Queries: {query_not_found}\n"
-            
+                debug_msgs.append(
+                    f"Query not Found in the Results! Missing Queries: {query_not_found}."
+                )
+
             if partial_score_0_8:
-                debug_msg += f"\nQueries with Correct Documents but Incorrect Scores: {[query for query, _, _ in partial_score_0_8]}\n"
+                debug_msgs.append(
+                    f"Queries with Correct Documents but Incorrect Scores: {[query for query, _, _ in partial_score_0_8]}."
+                )
 
             if partial_score_0_5:
-                debug_msg += f"\nQueries with Incorrect Documents but Some Correct Scores: {[query for query, _, _ in partial_score_0_5]}\n"
+                debug_msgs.append(
+                    f"Queries with Incorrect Documents but Some Correct Scores: {[query for query, _, _ in partial_score_0_5]}."
+                )
 
-            ranklist_mismatch = partial_score_0_8 + partial_score_0_5
+            if fully_incorrect:
+                debug_msgs.append(
+                    f"Queries with Incorrect Documents and Scores: {[query for query, _, _ in fully_incorrect]}."
+                )
+
+            ranklist_mismatch = partial_score_0_8 + partial_score_0_5 + fully_incorrect
             if ranklist_mismatch:
-                debug_msg += f"\nIncorrect Query Results:\n"
-                +"\n".join(
-                    [
-                        f"Query: {query_id}\n\tExpected Ranklist: {solution_query_ranklist}\n\tReceived Ranklist: {student_query_ranklist}"
-                        for query_id, solution_query_ranklist, student_query_ranklist in ranklist_mismatch
-                    ]
+                debug_msgs.append(
+                    f"Incorrect Query Results:\n"
+                    + "\n".join(
+                        [
+                            f"\tQuery: '{query_id}'\n\t\tExpected Ranklist: {solution_query_ranklist}\n\t\tReceived Ranklist: {student_query_ranklist}"
+                            for query_id, solution_query_ranklist, student_query_ranklist in ranklist_mismatch
+                        ]
+                    )
                 )
 
             total_cnt = len(solution_results)
             total_score = (
-                len(fully_correct) * 1.0 +
-                len(partial_score_0_8) * 0.8 +
-                len(partial_score_0_5) * 0.5
+                len(fully_correct) * 1.0
+                + len(partial_score_0_8) * 0.8
+                + len(partial_score_0_5) * 0.5
             )
             set_score(round((total_score / total_cnt) * max_score, 2))
 
+            debug_msg = "\n".join(debug_msgs).rstrip()
             self.assertion_wrapper(
                 self.assertEqual,
-                len(debug_msg),
+                len(partial_score_0_8) + len(partial_score_0_5) + len(fully_incorrect),
                 0,
                 debug_msg=debug_msg,
                 show_debug_msg=show_debug_msg,
