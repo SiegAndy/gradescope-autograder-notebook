@@ -599,7 +599,9 @@ class TestPA3(TestJupyterNotebook):
                         for sol_score, stu_score in zip(solution_scores, student_scores)
                     )
                     if score_match:
-                        partial_score_0_5.append(query_id)
+                        partial_score_0_5.append(
+                            (query_id, solution_query_ranklist, student_query_ranklist)
+                        )
                     else:
                         fully_incorrect.append(
                             (query_id, solution_query_ranklist, student_query_ranklist)
