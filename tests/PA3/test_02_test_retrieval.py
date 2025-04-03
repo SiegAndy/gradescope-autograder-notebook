@@ -19,7 +19,7 @@ class TestProtected(TestPA3):
         super().setUpClass(
             test_type="protected",
             level_1_limit=120,
-            level_2_limit=10,
+            level_2_limit=20,
             allowed_imports=None,
         )
 
@@ -38,7 +38,7 @@ class TestProtected(TestPA3):
     @weight(0)
     @visibility("visible")
     @number("0.4")
-    def test_0_04_sample_parse_qrels_trecrun(self):
+    def test_0_04_build_inverted_index(self):
         """Checking build_inverted_index()"""
         self.inverted_index_parsing_tester(
             show_debug_msg=DebugMsgConfig(
@@ -47,7 +47,7 @@ class TestProtected(TestPA3):
             ),
         )
 
-    @partial_credit(0)
+    @partial_credit(5)
     @visibility("visible")
     @hide_errors("Test failed!")
     @number("3.1")
@@ -58,14 +58,14 @@ class TestProtected(TestPA3):
             metric_func=tf,
             tqdm_desc="test_tf",
             set_score=set_score,
-            max_score=0,
+            max_score=5,
             show_debug_msg=DebugMsgConfig(
                 show_msg_in_orig_test=False,
                 test_tag="(3.1) Checking tf()",
             ),
         )
 
-    @partial_credit(0)
+    @partial_credit(5)
     @visibility("visible")
     @hide_errors("Test failed!")
     @number("3.2")
@@ -76,14 +76,14 @@ class TestProtected(TestPA3):
             metric_func=df,
             tqdm_desc="test_df",
             set_score=set_score,
-            max_score=0,
+            max_score=5,
             show_debug_msg=DebugMsgConfig(
                 show_msg_in_orig_test=False,
                 test_tag="(3.2) Checking df()",
             ),
         )
 
-    @partial_credit(0)
+    @partial_credit(5)
     @visibility("visible")
     @hide_errors("Test failed!")
     @number("3.3")
@@ -94,14 +94,14 @@ class TestProtected(TestPA3):
             metric_func=cf,
             tqdm_desc="test_cf",
             set_score=set_score,
-            max_score=0,
+            max_score=5,
             show_debug_msg=DebugMsgConfig(
                 show_msg_in_orig_test=False,
                 test_tag="(3.3) Checking cf()",
             ),
         )
 
-    @partial_credit(0)
+    @partial_credit(12)
     @visibility("visible")
     @hide_errors("Test failed!")
     @number("4.1")
@@ -114,14 +114,14 @@ class TestProtected(TestPA3):
             top_k=100,
             tqdm_desc="test_tfm",
             set_score=set_score,
-            max_score=0,
+            max_score=12,
             show_debug_msg=DebugMsgConfig(
                 show_msg_in_orig_test=False,
                 test_tag="(4.1) Checking tfm()",
             ),
         )
 
-    @partial_credit(0)
+    @partial_credit(30)
     @visibility("visible")
     @hide_errors("Test failed!")
     @number("4.2")
@@ -131,19 +131,19 @@ class TestProtected(TestPA3):
             tag_name="bm25",
             prerequisite_fn_tags=["tf", "df", "cf"],
             retrieval_model_func=bm25,
-            b=0.7,
+            b=0.65,
             k1=1.25,
             top_k=100,
             tqdm_desc="test_bm25",
             set_score=set_score,
-            max_score=0,
+            max_score=30,
             show_debug_msg=DebugMsgConfig(
                 show_msg_in_orig_test=False,
                 test_tag="(4.2) Checking bm25()",
             ),
         )
 
-    @partial_credit(0)
+    @partial_credit(30)
     @visibility("visible")
     @hide_errors("Test failed!")
     @number("4.3")
@@ -153,11 +153,11 @@ class TestProtected(TestPA3):
             tag_name="ql",
             prerequisite_fn_tags=["tf", "df", "cf"],
             retrieval_model_func=ql,
-            lambda_factor=0.225,
+            lambda_factor=0.235,
             top_k=100,
             tqdm_desc="test_ql",
             set_score=set_score,
-            max_score=0,
+            max_score=30,
             show_debug_msg=DebugMsgConfig(
                 show_msg_in_orig_test=False,
                 test_tag="(4.3) Checking ql()",

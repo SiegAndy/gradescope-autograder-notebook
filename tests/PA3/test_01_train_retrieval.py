@@ -31,7 +31,7 @@ class TestPublic(TestPA3):
     @weight(0)
     @visibility("visible")
     @number("0.2")
-    def test_0_02_sample_parse_qrels_trecrun(self):
+    def test_0_02_sample_build_inverted_index(self):
         """Checking build_inverted_index()"""
         self.inverted_index_parsing_tester(show_debug_msg=None)
 
